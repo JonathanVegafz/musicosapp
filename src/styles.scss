@@ -1,0 +1,177 @@
+@use 'primeicons/primeicons.css';
+
+// ─── Tokens de color ────────────────────────────────────────────────────────
+:root {
+  --surface-ground: #0f0f11;
+  --surface-section: #141418;
+  --surface-card: #1a1a1f;
+  --surface-overlay: #1e1e24;
+  --surface-border: #27272a;
+  --surface-hover: #2a2a30;
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+
+  --accent-primary: #a78bfa;
+  --accent-primary-hover: #c4b5fd;
+  --accent-chord: #f59e0b;
+  --accent-chord-bg: rgba(245, 158, 11, 0.08);
+
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+// ─── Reset & base ────────────────────────────────────────────────────────────
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--surface-ground);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-ground);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-hover);
+  border-radius: 3px;
+  &:hover { background: var(--text-muted); }
+}
+
+// ─── Utilidades ──────────────────────────────────────────────────────────────
+.text-primary   { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-muted     { color: var(--text-muted) !important; }
+.text-accent    { color: var(--accent-primary) !important; }
+.text-chord     { color: var(--accent-chord) !important; }
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ─── Overrides PrimeNG ───────────────────────────────────────────────────────
+.p-component { font-family: var(--font-sans); }
+
+.p-card {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: var(--radius-lg) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-inputtext, .p-textarea {
+  background: var(--surface-overlay) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-md) !important;
+  &:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2) !important;
+  }
+}
+
+.p-textarea { font-family: var(--font-mono) !important; }
+
+.p-select, .p-multiselect {
+  background: var(--surface-overlay) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.p-select-overlay, .p-multiselect-overlay {
+  background: var(--surface-overlay) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-select-option, .p-multiselect-option {
+  color: var(--text-primary) !important;
+  &:hover { background: var(--surface-hover) !important; }
+  &.p-select-option-selected { background: rgba(167, 139, 250, 0.15) !important; color: var(--accent-primary) !important; }
+}
+
+.p-dialog {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-dialog-header, .p-dialog-content, .p-dialog-footer {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.p-toast .p-toast-message {
+  background: var(--surface-overlay) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-tag {
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+.p-chip {
+  background: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.p-divider::before {
+  border-color: var(--surface-border) !important;
+}
+
+// ─── Drag & drop (CDK) ───────────────────────────────────────────────────────
+.cdk-drag-preview {
+  background: var(--surface-overlay);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  opacity: 0.95;
+}
+.cdk-drag-placeholder { opacity: 0; }
+.cdk-drag-animating { transition: transform 250ms cubic-bezier(0, 0, 0.2, 1); }
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// ─── Focus visible (accesibilidad) ───────────────────────────────────────────
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
