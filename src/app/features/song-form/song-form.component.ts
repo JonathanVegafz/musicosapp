@@ -437,7 +437,7 @@ export class SongFormComponent implements OnInit {
     return !!(ctrl?.invalid && ctrl.touched);
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -460,13 +460,17 @@ export class SongFormComponent implements OnInit {
       content: v.content,
     };
 
-    const id = this.id();
-    if (id) {
-      this.songsService.update(id, data);
-      this.router.navigate(['/songs', id]);
-    } else {
-      const newSong = this.songsService.add(data);
-      this.router.navigate(['/songs', newSong.id]);
+    try {
+      const id = this.id();
+      if (id) {
+        await this.songsService.update(id, data);
+        this.router.navigate(['/songs', id]);
+      } else {
+        const newSong = await this.songsService.add(data);
+        this.router.navigate(['/songs', newSong.id]);
+      }
+    } finally {
+      this.saving.set(false);
     }
   }
 }

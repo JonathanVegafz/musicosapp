@@ -24,9 +24,11 @@ export const appConfig: ApplicationConfig = {
       ripple: true,
     }),
     MessageService,
-    provideAppInitializer(() => {
-      inject(SongsService).init();
-      inject(SetlistsService).init();
+    provideAppInitializer(async () => {
+      const songs = inject(SongsService);
+      const setlists = inject(SetlistsService);
+      await songs.init();
+      await setlists.init();
     }),
   ],
 };

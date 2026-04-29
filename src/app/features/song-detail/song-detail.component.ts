@@ -320,9 +320,9 @@ export class SongDetailComponent implements OnInit {
     this.presentationMode.update((v) => !v);
   }
 
-  deleteSong(id: string): void {
+  async deleteSong(id: string): Promise<void> {
     if (confirm('¿Eliminar esta canción? Esta acción no se puede deshacer.')) {
-      this.songsService.remove(id);
+      await this.songsService.remove(id);
       this.router.navigate(['/library']);
     }
   }
