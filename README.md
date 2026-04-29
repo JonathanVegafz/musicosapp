@@ -3,7 +3,6 @@
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.3.
 
 clave de supabase bd: Musicos*2026#
-Probar cambios
 ## Development server
 
 To start a local development server, run:
