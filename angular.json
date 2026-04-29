@@ -59,6 +59,12 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "gh-pages": {
+              "outputMode": "static",
+              "optimization": true,
+              "outputHashing": "all",
+              "extractLicenses": true
             }
           },
           "defaultConfiguration": "production"

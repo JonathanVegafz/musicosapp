@@ -1,0 +1,44 @@
+{
+  "songs": [
+    {
+      "id": "song-abres-caminos",
+      "title": "Abres Caminos",
+      "artist": "Marcela Gándara",
+      "key": "D",
+      "bpm": 132,
+      "capo": 0,
+      "youtube": "https://youtu.be/Ao_pBncalhI?si=L918EnPEir8I-nZa",
+      "pdfUrl": "/pdfs/ABRES CAMINO (ACORDES).pdf",
+      "tags": ["adoración", "poderoso"],
+      "content": "{comment: Intro}\n[G] [D] [A] [Bm]\n\n{comment: Verso 1}\n[G]Aquí estás, te vemos mo[D]ver\n[A]Te adoraré, te ado[Bm]raré\n[G]Aquí estás, obrando en [D]mi\n[A]Te adoraré, te ado[Bm]raré\n\n{comment: Coro}\n[G]Milagroso, abres camino\n[D]Cumples promesas\n[A]Luz en tinieblas\n[Bm]Mi dios, así eres tú\n\n{comment: Verso 3}\n[G]Aquí estás, sanando mi cora[D]zón\n[A]Te adoraré, te ado[Bm]raré\n[G]Aquí estás, tocando mi cora[D]zón\n[A]Te adoraré, te ado[Bm]raré\n\n{comment: Puente}\n[G]Aunque no pueda ver\nEstás obrando\n[D]Aunque no pueda ver\nEstás obrando\n[A]Siempre estás\nSiempre estás obrando\n[Bm]Siempre estás\nSiempre estás obrando",
+      "createdAt": "2026-04-29T00:00:00.000Z"
+    },
+    {
+      "id": "song-bondad-de-dios",
+      "title": "La Bondad de Dios",
+      "artist": "Church of the City",
+      "key": "G",
+      "bpm": 136,
+      "capo": 0,
+      "youtube": "https://youtu.be/LveZsAhVbws?si=DEXOvo_0yHR9sqoA",
+      "pdfUrl": "/pdfs/LA BONDAD DE DIOS - G.pdf",
+      "tags": ["adoración", "íntimo"],
+      "content": "{comment: Verso}\n[G]Te amo Dios, Tu amor nunca me fa[C]lla [G]\nMi existir en tus manos es[Em]tá [C] [D]\nDesde el momento que des[Em]pierto [C]\nHasta el anoche[G]cer [D/F#] [Em]\n[C]Yo cantaré de la bonda[D]d de [G]Dios\n\n{comment: Coro}\n[C]En mi vida has sido [G]bueno\n[C]En mi vida has sido tan, tan [G]fiel [D]\n[C]Con mi ser, con cada a[G]liento [D/F#] [Em]\n[C]Yo cantaré de la bonda[D]d de [G]Dios\n\n{comment: Puente}\n[G/B]Tu fidelidad sigue persi[C]guién[D]dome [G]\n[G/B]Todo lo que soy, Te lo entre[C]go hoy\n[D]A Ti me ren[Em]diré\n[G/B]Tu fidelidad sigue persi[C]guién[D]dome [G]",
+      "createdAt": "2026-04-29T00:00:00.000Z"
+    },
+    {
+      "id": "song-hossana",
+      "title": "Hossana",
+      "artist": "Marcos Barrientos",
+      "key": "Bm",
+      "bpm": 146,
+      "capo": 0,
+      "youtube": "https://youtu.be/RHZTk79wAL4?si=P2Vc9cb0xjZSS3YV",
+      "pdfUrl": "/pdfs/Hossana (ACORDES).pdf",
+      "tags": ["alabanza", "poderoso"],
+      "content": "{comment: Verso 1}\n[Bm]Levantamos un [A]clamor\n[F#m]Por sanidad y reden[G]ción\n[Bm]Muéstranos lo que tu [A]ves\n[F#m]Los secretos de tu cora[G]zón\n[Bm]Un pueblo unido pi[A]de hoy\n[F#m]Tu libertad y salva[G]ción\n[Bm]Ármanos con tu va[A]lor\n[D/F#]Lo que deseamos es revolu[G]ción\n\n{comment: Precoro}\n[G]Que el cielo se parta en dos [A]\n[G]Inúndanos\n[A]En el desierto broten ríos\n[Bm]Vida sopla hoy\n\n{comment: Coro}\n[D]Hosanna al rey de salva[Em]ción\nHosanna al Dios Altísimo\n[G]Hosanna, Jesucristo, Jesucristo es [A]rey\n[Bm]rey\n\n{comment: Puente}\n[G]Hosanna Hosanna [A]\n[G]Hosanna al [A]rey [G/B] [A/C#]\n[G]Hosanna Hosanna [A]\n[G]Hosanna al [A]rey [Bm] [A/C#]",
+      "createdAt": "2026-04-29T00:00:00.000Z"
+    }
+  ],
+  "setlists": []
+}

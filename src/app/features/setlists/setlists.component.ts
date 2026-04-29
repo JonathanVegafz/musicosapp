@@ -365,13 +365,13 @@ export class SetlistsComponent {
     this.showModal.set(false);
   }
 
-  createSetlist(): void {
+  async createSetlist(): Promise<void> {
     if (this.createForm.invalid) {
       this.createForm.markAllAsTouched();
       return;
     }
     const v = this.createForm.getRawValue();
-    this.setlistsService.create({
+    await this.setlistsService.create({
       name: v.name,
       date: v.date ? new Date(v.date).toISOString() : undefined,
       description: v.description || undefined,
@@ -379,11 +379,11 @@ export class SetlistsComponent {
     this.closeModal();
   }
 
-  deleteSetlist(event: Event, id: string): void {
+  async deleteSetlist(event: Event, id: string): Promise<void> {
     event.preventDefault();
     event.stopPropagation();
     if (confirm('¿Eliminar esta setlist?')) {
-      this.setlistsService.remove(id);
+      await this.setlistsService.remove(id);
     }
   }
 

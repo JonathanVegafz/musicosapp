@@ -11,12 +11,20 @@ export interface Song {
   tags?: string[];
 }
 
+export interface SetlistMember {
+  id: string;
+  name: string;
+  role: string;
+  order: number;
+}
+
 export interface Setlist {
   id: string;
   name: string;
   date?: string;
   description?: string;
   songs: SetlistSong[];
+  members: SetlistMember[];
   createdAt: string;
 }
 

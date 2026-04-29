@@ -326,6 +326,95 @@ interface SetlistEntry {
       font-size: 0.875rem;
     }
 
+    /* Members panel */
+    .members-panel {
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .member-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .member-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--surface-border);
+      &:last-child { border-bottom: none; }
+    }
+
+    .member-name {
+      flex: 1;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+
+    .role-badge {
+      background: rgba(99, 179, 237, 0.12);
+      color: #63b3ed;
+      border: 1px solid rgba(99, 179, 237, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .member-add-row {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.875rem 1.25rem;
+      border-top: 1px solid var(--surface-border);
+      background: var(--surface-overlay);
+      flex-wrap: wrap;
+    }
+
+    .member-input {
+      flex: 1;
+      min-width: 100px;
+      padding: 0.5rem 0.75rem;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 0.825rem;
+      outline: none;
+      font-family: var(--font-sans);
+      transition: border-color 0.15s;
+      &:focus { border-color: var(--accent-primary); }
+      &::placeholder { color: var(--text-muted); }
+    }
+
+    .btn-add-member {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.5rem 0.9rem;
+      background: var(--accent-primary);
+      color: #0f0f11;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.825rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      &:hover { background: var(--accent-primary-hover); }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+    }
+
+    .empty-members {
+      padding: 1.25rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.825rem;
+    }
+
     /* Not found */
     .not-found {
       text-align: center;
@@ -360,6 +449,64 @@ interface SetlistEntry {
                 {{ entries().length }} cancion{{ entries().length !== 1 ? 'es' : '' }}
               </span>
             </div>
+          </div>
+        </div>
+
+        <!-- Members / turno panel -->
+        <div class="members-panel" aria-label="Músicos del turno">
+          <div class="panel-header">
+            <span class="panel-title">
+              <i class="pi pi-users" style="margin-right: 0.35rem;" aria-hidden="true"></i>
+              Músicos del turno
+            </span>
+          </div>
+
+          @if (sl.members.length) {
+            <div class="member-list" role="list">
+              @for (m of sl.members; track m.id) {
+                <div class="member-row" role="listitem">
+                  <span class="member-name">{{ m.name }}</span>
+                  <span class="role-badge">{{ m.role }}</span>
+                  <button
+                    class="remove-btn"
+                    (click)="removeMember(m.id)"
+                    [attr.aria-label]="'Quitar a ' + m.name"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-members" role="status">
+              Sin músicos asignados aún.
+            </div>
+          }
+
+          <div class="member-add-row">
+            <input
+              class="member-input"
+              type="text"
+              placeholder="Nombre"
+              [(ngModel)]="memberName"
+              aria-label="Nombre del músico"
+            />
+            <input
+              class="member-input"
+              type="text"
+              placeholder="Instrumento o rol"
+              [(ngModel)]="memberRole"
+              aria-label="Instrumento o rol del músico"
+            />
+            <button
+              class="btn-add-member"
+              (click)="addMember()"
+              [disabled]="!memberName().trim() || !memberRole().trim()"
+              aria-label="Agregar músico al turno"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              Agregar
+            </button>
           </div>
         </div>
 
@@ -491,6 +638,8 @@ export class SetlistDetailComponent {
 
   readonly setlist = computed(() => this.setlistsService.getById(this.id()));
   readonly addQuery = signal('');
+  readonly memberName = signal('');
+  readonly memberRole = signal('');
 
   readonly entries = computed<SetlistEntry[]>(() => {
     const sl = this.setlist();
@@ -514,22 +663,35 @@ export class SetlistDetailComponent {
     return this.setlist()?.songs.some((s) => s.songId === songId) ?? false;
   }
 
-  addSong(songId: string): void {
-    this.setlistsService.addSong(this.id(), songId);
+  async addMember(): Promise<void> {
+    const name = this.memberName().trim();
+    const role = this.memberRole().trim();
+    if (!name || !role) return;
+    await this.setlistsService.addMember(this.id(), name, role);
+    this.memberName.set('');
+    this.memberRole.set('');
   }
 
-  removeSong(songId: string): void {
-    this.setlistsService.removeSong(this.id(), songId);
+  async removeMember(memberId: string): Promise<void> {
+    await this.setlistsService.removeMember(this.id(), memberId);
   }
 
-  onDrop(event: CdkDragDrop<SetlistEntry[]>): void {
+  async addSong(songId: string): Promise<void> {
+    await this.setlistsService.addSong(this.id(), songId);
+  }
+
+  async removeSong(songId: string): Promise<void> {
+    await this.setlistsService.removeSong(this.id(), songId);
+  }
+
+  async onDrop(event: CdkDragDrop<SetlistEntry[]>): Promise<void> {
     const current = [...this.entries()];
     moveItemInArray(current, event.previousIndex, event.currentIndex);
     const reordered: SetlistSong[] = current.map((e, i) => ({
       ...e.setlistSong,
       order: i + 1,
     }));
-    this.setlistsService.reorderSongs(this.id(), reordered);
+    await this.setlistsService.reorderSongs(this.id(), reordered);
   }
 
   formatDate(iso: string): string {
