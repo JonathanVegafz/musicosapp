@@ -117,4 +117,26 @@ de su [G]gloria y [D]honor
 [G]¡Aleluya! [D]resucitó
 [C]y reina por siem[G]pre`,
   },
+  {
+    id: 'toda-lengua-toda-nacion',
+    title: 'Toda Lengua y Toda Nación',
+    artist: 'Generación 12',
+    key: 'G',
+    bpm: 70,
+    capo: 0,
+    tags: ['adoración', 'iglesia'],
+    createdAt: '2024-01-01T00:00:00.000Z',
+    content: `{title: Toda Lengua y Toda Nación}
+{artist: Generación 12}
+
+[G]Toda lengua y toda [D]nación
+[Em]adorará tu [C]nombre Señor
+[G]Todo reino se [D]inclinará
+[Em]ante ti oh [C]Rey de reyes
+
+[G]Tuyo es el [D]reino
+[Em]tuyo es el [C]poder
+[G]Tuyo es el [D]honor
+[Em]y la gloria para [C]siempre`,
+  },
 ];

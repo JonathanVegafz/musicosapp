@@ -13,6 +13,7 @@ import { ChordSheetComponent } from '../../shared/components/chord-sheet/chord-s
 import { TransposeControlComponent } from '../../shared/components/transpose-control/transpose-control.component';
 import { FontSizeControlComponent } from '../../shared/components/font-size-control/font-size-control.component';
 import { YouTubeEmbedComponent } from '../../shared/components/youtube-embed/youtube-embed.component';
+import { MultitrackPlayerComponent } from './multitrack-player/multitrack-player.component';
 import { FontSize } from '../../types';
 
 @Component({
@@ -23,6 +24,7 @@ import { FontSize } from '../../types';
     TransposeControlComponent,
     FontSizeControlComponent,
     YouTubeEmbedComponent,
+    MultitrackPlayerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
@@ -279,6 +281,12 @@ import { FontSize } from '../../types';
         @if (s.youtube) {
           <app-youtube-embed [url]="s.youtube" />
         }
+
+        <!-- Multitrack Player -->
+        <app-multitrack-player
+          [songId]="s.id"
+          [semitones]="semitones()"
+        />
 
         <!-- Chord sheet -->
         <div class="sheet-panel">

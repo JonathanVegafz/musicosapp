@@ -28,6 +28,25 @@ export class StorageService {
     }
   }
 
+  getItem<T>(key: string): T | null {
+    if (!this.isBrowser) return null;
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  saveItem<T>(key: string, item: T): void {
+    if (!this.isBrowser) return;
+    try {
+      localStorage.setItem(key, JSON.stringify(item));
+    } catch {
+      // localStorage lleno o no disponible — silencioso
+    }
+  }
+
   clear(key: string): void {
     if (!this.isBrowser) return;
     localStorage.removeItem(key);
