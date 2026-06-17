@@ -2,12 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
-  OnInit,
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { Title } from '@angular/platform-browser';
 import { SongsService } from '../../core/services/songs.service';
 import { ChordSheetComponent } from '../../shared/components/chord-sheet/chord-sheet.component';
 import { TransposeControlComponent } from '../../shared/components/transpose-control/transpose-control.component';
@@ -301,9 +302,10 @@ import { FontSize } from '../../types';
     '[class.presentation-mode]': 'presentationMode()',
   },
 })
-export class SongDetailComponent implements OnInit {
+export class SongDetailComponent {
   private readonly songsService = inject(SongsService);
   private readonly router = inject(Router);
+  private readonly title = inject(Title);
 
   readonly id = input.required<string>();
 
@@ -312,8 +314,11 @@ export class SongDetailComponent implements OnInit {
   readonly fontSize = signal<FontSize>('normal');
   readonly presentationMode = signal(false);
 
-  ngOnInit(): void {
-    this.semitones.set(0);
+  constructor() {
+    effect(() => {
+      const s = this.song();
+      this.title.setTitle(s ? `${s.title} — MúsicosApp` : 'Canción — MúsicosApp');
+    });
   }
 
   togglePresentation(): void {

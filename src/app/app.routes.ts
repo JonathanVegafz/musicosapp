@@ -8,21 +8,25 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        title: 'Inicio — MúsicosApp',
         loadComponent: () =>
           import('./features/home/home.component').then((m) => m.HomeComponent),
       },
       {
         path: 'library',
+        title: 'Biblioteca — MúsicosApp',
         loadComponent: () =>
           import('./features/library/library.component').then((m) => m.LibraryComponent),
       },
       {
         path: 'songs/new',
+        title: 'Nueva canción — MúsicosApp',
         loadComponent: () =>
           import('./features/song-form/song-form.component').then((m) => m.SongFormComponent),
       },
       {
         path: 'songs/:id/edit',
+        title: 'Editar canción — MúsicosApp',
         loadComponent: () =>
           import('./features/song-form/song-form.component').then((m) => m.SongFormComponent),
       },
@@ -35,6 +39,7 @@ export const routes: Routes = [
       },
       {
         path: 'setlists',
+        title: 'Setlists — MúsicosApp',
         loadComponent: () =>
           import('./features/setlists/setlists.component').then((m) => m.SetlistsComponent),
       },

@@ -1,14 +1,33 @@
 # Musicos
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.3.
+App de gestión de canciones y setlists para músicos, construida con Angular 21 y Supabase como backend. Generada con [Angular CLI](https://github.com/angular/angular-cli) 21.1.3.
 
-clave de supabase bd: Musicos*2026#
+## Configuración (Supabase)
+
+El backend de datos es Supabase. Las credenciales se leen desde un archivo `.env` en la raíz del repo (gitignoreado) y se inyectan en `src/environments/environment.ts` mediante `scripts/set-env.js`.
+
+1. Copia el ejemplo y rellena tus valores:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. En `.env` usa la **anon public key** de Supabase (Dashboard → Project Settings → API), **nunca** la `service_role` key (bypassa Row Level Security).
+
+3. Genera el environment (también se ejecuta solo en `postinstall`, `start`, `build` y `test`):
+
+   ```bash
+   npm run config
+   ```
+
+> Asegúrate de tener **Row Level Security** habilitado en todas las tablas (`songs`, `setlists`, `setlist_songs`, `setlist_members`) con sus policies.
+
 ## Development server
 
 To start a local development server, run:
 
 ```bash
-ng serve
+npm start
 ```
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
@@ -37,23 +56,39 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Linting
 
 ```bash
-ng test
+npm run lint
+```
+
+## Running unit tests
+
+Unit tests run with the [Vitest](https://vitest.dev/) test runner:
+
+```bash
+npm test
 ```
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+E2E tests use [Playwright](https://playwright.dev/) (specs in `e2e/`). First time:
 
 ```bash
-ng e2e
+npx playwright install chromium
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Run against local dev server:
+
+```bash
+BASE_URL=http://localhost:4200 npx playwright test
+```
+
+Or against the deployed site (default `BASE_URL`):
+
+```bash
+npx playwright test
+```
 
 ## Additional Resources
 

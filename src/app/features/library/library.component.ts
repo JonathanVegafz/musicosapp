@@ -1,15 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { debounceTime } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SongsService } from '../../core/services/songs.service';
 import { SongCardComponent } from '../../shared/components/song-card/song-card.component';
-
-const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
-               'Cm', 'Dm', 'Em', 'Fm', 'Gm', 'Am', 'Bm'];
+import { LoadStateComponent } from '../../shared/components/load-state/load-state.component';
+import { MUSICAL_KEYS } from '../../shared/constants/keys';
 
 @Component({
   selector: 'app-library',
-  imports: [RouterLink, FormsModule, SongCardComponent],
+  imports: [RouterLink, FormsModule, SongCardComponent, LoadStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .library { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -144,6 +145,37 @@ const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
       transition: border-color 0.15s, color 0.15s;
       &:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
     }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding-top: 0.5rem;
+    }
+
+    .page-info {
+      font-size: 0.825rem;
+      color: var(--text-secondary);
+    }
+
+    .page-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: var(--surface-overlay);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+
+      &:hover:not(:disabled) { border-color: var(--accent-primary); color: var(--accent-primary); }
+      &:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+    }
   `,
   template: `
     <div class="library">
@@ -189,33 +221,59 @@ const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
         }
       </div>
 
-      @if (query() || selectedKey()) {
-        <p class="results-info">
-          {{ filteredSongs().length }} resultado{{ filteredSongs().length !== 1 ? 's' : '' }}
-          @if (query()) { para "{{ query() }}" }
-          @if (selectedKey()) { en {{ selectedKey() }} }
-        </p>
-      }
+      <app-load-state [loading]="loading()" [error]="error()" loadingText="Cargando canciones..." />
 
-      @if (filteredSongs().length) {
-        <div class="songs-grid" role="list" aria-label="Lista de canciones">
-          @for (song of filteredSongs(); track song.id) {
-            <app-song-card [song]="song" />
+      @if (!loading() && !error()) {
+        @if (query() || selectedKey()) {
+          <p class="results-info">
+            {{ filteredSongs().length }} resultado{{ filteredSongs().length !== 1 ? 's' : '' }}
+            @if (debouncedQuery()) { para "{{ debouncedQuery() }}" }
+            @if (selectedKey()) { en {{ selectedKey() }} }
+          </p>
+        }
+
+        @if (filteredSongs().length) {
+          <div class="songs-grid" role="list" aria-label="Lista de canciones">
+            @for (song of pagedSongs(); track song.id) {
+              <app-song-card [song]="song" />
+            }
+          </div>
+
+          @if (totalPages() > 1) {
+            <nav class="pagination" aria-label="Paginación de canciones">
+              <button
+                class="page-btn"
+                (click)="prevPage()"
+                [disabled]="page() <= 1"
+                aria-label="Página anterior"
+              >
+                <i class="pi pi-chevron-left" aria-hidden="true"></i>
+              </button>
+              <span class="page-info" aria-live="polite">Página {{ page() }} de {{ totalPages() }}</span>
+              <button
+                class="page-btn"
+                (click)="nextPage()"
+                [disabled]="page() >= totalPages()"
+                aria-label="Página siguiente"
+              >
+                <i class="pi pi-chevron-right" aria-hidden="true"></i>
+              </button>
+            </nav>
           }
-        </div>
-      } @else {
-        <div class="empty" role="status">
-          <i class="pi pi-music" aria-hidden="true"></i>
-          <p>No se encontraron canciones.</p>
-          @if (query() || selectedKey()) {
-            <button class="clear-btn" (click)="clearFilters()">Limpiar filtros</button>
-          } @else {
-            <a class="btn-primary" routerLink="/songs/new" style="display:inline-flex">
-              <i class="pi pi-plus" aria-hidden="true"></i>
-              Agregar la primera canción
-            </a>
-          }
-        </div>
+        } @else {
+          <div class="empty" role="status">
+            <i class="pi pi-music" aria-hidden="true"></i>
+            <p>No se encontraron canciones.</p>
+            @if (query() || selectedKey()) {
+              <button class="clear-btn" (click)="clearFilters()">Limpiar filtros</button>
+            } @else {
+              <a class="btn-primary" routerLink="/songs/new" style="display:inline-flex">
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                Agregar la primera canción
+              </a>
+            }
+          </div>
+        }
       }
     </div>
   `,
@@ -225,11 +283,47 @@ export class LibraryComponent {
 
   readonly query = signal('');
   readonly selectedKey = signal('');
-  readonly keys = KEYS;
+  readonly keys = MUSICAL_KEYS;
+  readonly pageSize = 24;
+  readonly page = signal(1);
+
+  readonly loading = this.songsService.loading;
+  readonly error = this.songsService.error;
+
+  // Debounce the free-text query so filtering doesn't run on every keystroke.
+  readonly debouncedQuery = toSignal(toObservable(this.query).pipe(debounceTime(300)), {
+    initialValue: '',
+  });
 
   readonly filteredSongs = computed(() =>
-    this.songsService.search(this.query(), this.selectedKey() || undefined),
+    this.songsService.search(this.debouncedQuery(), this.selectedKey() || undefined),
   );
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredSongs().length / this.pageSize)),
+  );
+
+  readonly pagedSongs = computed(() => {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.filteredSongs().slice(start, start + this.pageSize);
+  });
+
+  constructor() {
+    // Reset to the first page whenever the active filters change.
+    effect(() => {
+      this.debouncedQuery();
+      this.selectedKey();
+      this.page.set(1);
+    });
+  }
+
+  prevPage(): void {
+    this.page.update((p) => Math.max(1, p - 1));
+  }
+
+  nextPage(): void {
+    this.page.update((p) => Math.min(this.totalPages(), p + 1));
+  }
 
   clearFilters(): void {
     this.query.set('');

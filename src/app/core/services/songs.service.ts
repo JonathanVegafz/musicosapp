@@ -2,6 +2,21 @@ import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { Song } from '../../types';
 import { SupabaseService } from './supabase.service';
+import { toErrorMessage } from '../../shared/utils/error-message';
+
+/** Shape of a row in the Supabase `songs` table. */
+interface SongRow {
+  id: string;
+  title: string;
+  artist: string;
+  key: string;
+  bpm: number;
+  capo: number;
+  youtube: string | null;
+  content: string;
+  tags: string[] | null;
+  created_at: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class SongsService {
@@ -9,15 +24,16 @@ export class SongsService {
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly songs = signal<Song[]>([]);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
-  readonly recentSongs = computed(() =>
-    [...this.songs()]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5),
-  );
+  // Songs arrive ordered by created_at DESC from Supabase, so no re-sort needed.
+  readonly recentSongs = computed(() => this.songs().slice(0, 5));
 
   async init(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
+    this.loading.set(true);
+    this.error.set(null);
     try {
       const { data, error } = await this.sb
         .from('songs')
@@ -25,8 +41,11 @@ export class SongsService {
         .order('created_at', { ascending: false });
       if (error) throw error;
       this.songs.set((data ?? []).map(mapSong));
-    } catch {
+    } catch (e: unknown) {
+      this.error.set(toErrorMessage(e, 'Error al cargar canciones'));
       this.songs.set([]);
+    } finally {
+      this.loading.set(false);
     }
   }
 
@@ -76,19 +95,18 @@ export class SongsService {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapSong(row: Record<string, any>): Song {
+function mapSong(row: SongRow): Song {
   return {
-    id: row['id'],
-    title: row['title'],
-    artist: row['artist'],
-    key: row['key'],
-    bpm: row['bpm'],
-    capo: row['capo'],
-    youtube: row['youtube'] ?? undefined,
-    content: row['content'],
-    tags: row['tags'] ?? undefined,
-    createdAt: row['created_at'],
+    id: row.id,
+    title: row.title,
+    artist: row.artist,
+    key: row.key,
+    bpm: row.bpm,
+    capo: row.capo,
+    youtube: row.youtube ?? undefined,
+    content: row.content,
+    tags: row.tags ?? undefined,
+    createdAt: row.created_at,
   };
 }
 

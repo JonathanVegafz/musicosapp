@@ -2,6 +2,32 @@ import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { Setlist, SetlistMember, SetlistSong } from '../../types';
 import { SupabaseService } from './supabase.service';
+import { toErrorMessage } from '../../shared/utils/error-message';
+
+/** Shape of a row in the Supabase `setlists` table (with nested relations). */
+interface SetlistRow {
+  id: string;
+  name: string;
+  date: string | null;
+  description: string | null;
+  created_at: string;
+  setlist_songs?: SetlistSongRow[];
+  setlist_members?: SetlistMemberRow[];
+}
+
+interface SetlistSongRow {
+  song_id: string;
+  order: number;
+  transposed_key: string | null;
+  notes: string | null;
+}
+
+interface SetlistMemberRow {
+  id: string;
+  name: string;
+  role: string;
+  order: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class SetlistsService {
@@ -9,21 +35,22 @@ export class SetlistsService {
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly setlists = signal<Setlist[]>([]);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
+  // Only setlists with a future date are considered "upcoming".
   readonly upcomingSetlists = computed(() => {
     const now = new Date();
     return [...this.setlists()]
-      .filter((sl) => !sl.date || new Date(sl.date) >= now)
-      .sort((a, b) => {
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      })
+      .filter((sl) => !!sl.date && new Date(sl.date) >= now)
+      .sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime())
       .slice(0, 3);
   });
 
   async init(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
+    this.loading.set(true);
+    this.error.set(null);
     try {
       const { data, error } = await this.sb
         .from('setlists')
@@ -31,8 +58,11 @@ export class SetlistsService {
         .order('created_at', { ascending: false });
       if (error) throw error;
       this.setlists.set((data ?? []).map(mapSetlist));
-    } catch {
+    } catch (e: unknown) {
+      this.error.set(toErrorMessage(e, 'Error al cargar setlists'));
       this.setlists.set([]);
+    } finally {
+      this.loading.set(false);
     }
   }
 
@@ -161,55 +191,51 @@ export class SetlistsService {
   }
 
   private async _syncOrders(setlistId: string, songs: SetlistSong[]): Promise<void> {
-    for (const s of songs) {
-      const { error } = await this.sb
-        .from('setlist_songs')
-        .update({ order: s.order })
-        .eq('setlist_id', setlistId)
-        .eq('song_id', s.songId);
-      if (error) throw error;
-    }
+    if (!songs.length) return;
+    const rows = songs.map((s) => ({
+      setlist_id: setlistId,
+      song_id: s.songId,
+      order: s.order,
+    }));
+    const { error } = await this.sb
+      .from('setlist_songs')
+      .upsert(rows, { onConflict: 'setlist_id,song_id' });
+    if (error) throw error;
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapSetlist(row: Record<string, any>): Setlist {
-  const rawSongs: Record<string, unknown>[] = row['setlist_songs'] ?? [];
-  const rawMembers: Record<string, unknown>[] = row['setlist_members'] ?? [];
+function mapSetlist(row: SetlistRow): Setlist {
   return {
     ...mapSetlistRow(row),
-    songs: rawSongs.map(mapSetlistSong).sort((a, b) => a.order - b.order),
-    members: rawMembers.map(mapSetlistMember).sort((a, b) => a.order - b.order),
+    songs: (row.setlist_songs ?? []).map(mapSetlistSong).sort((a, b) => a.order - b.order),
+    members: (row.setlist_members ?? []).map(mapSetlistMember).sort((a, b) => a.order - b.order),
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapSetlistRow(row: Record<string, any>): Omit<Setlist, 'songs' | 'members'> {
+function mapSetlistRow(row: SetlistRow): Omit<Setlist, 'songs' | 'members'> {
   return {
-    id: row['id'],
-    name: row['name'],
-    date: row['date'] ?? undefined,
-    description: row['description'] ?? undefined,
-    createdAt: row['created_at'],
+    id: row.id,
+    name: row.name,
+    date: row.date ?? undefined,
+    description: row.description ?? undefined,
+    createdAt: row.created_at,
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapSetlistSong(row: Record<string, any>): SetlistSong {
+function mapSetlistSong(row: SetlistSongRow): SetlistSong {
   return {
-    songId: row['song_id'],
-    order: row['order'],
-    transposedKey: row['transposed_key'] ?? undefined,
-    notes: row['notes'] ?? undefined,
+    songId: row.song_id,
+    order: row.order,
+    transposedKey: row.transposed_key ?? undefined,
+    notes: row.notes ?? undefined,
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapSetlistMember(row: Record<string, any>): SetlistMember {
+function mapSetlistMember(row: SetlistMemberRow): SetlistMember {
   return {
-    id: row['id'],
-    name: row['name'],
-    role: row['role'],
-    order: row['order'],
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    order: row.order,
   };
 }
