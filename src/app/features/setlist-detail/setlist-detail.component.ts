@@ -2,11 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Title } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import {
   CdkDragDrop,
@@ -633,6 +635,7 @@ interface SetlistEntry {
 export class SetlistDetailComponent {
   private readonly setlistsService = inject(SetlistsService);
   private readonly songsService = inject(SongsService);
+  private readonly title = inject(Title);
 
   readonly id = input.required<string>();
 
@@ -640,6 +643,13 @@ export class SetlistDetailComponent {
   readonly addQuery = signal('');
   readonly memberName = signal('');
   readonly memberRole = signal('');
+
+  constructor() {
+    effect(() => {
+      const sl = this.setlist();
+      this.title.setTitle(sl ? `${sl.name} — MúsicosApp` : 'Setlist — MúsicosApp');
+    });
+  }
 
   readonly entries = computed<SetlistEntry[]>(() => {
     const sl = this.setlist();

@@ -1,12 +1,17 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { A11yModule } from '@angular/cdk/a11y';
 import { SetlistsService } from '../../core/services/setlists.service';
+import { LoadStateComponent } from '../../shared/components/load-state/load-state.component';
 
 @Component({
   selector: 'app-setlists',
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, A11yModule, LoadStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:keydown.escape)': 'onEscape()',
+  },
   styles: `
     .page { display: flex; flex-direction: column; gap: 1.5rem; }
 
@@ -130,9 +135,16 @@ import { SetlistsService } from '../../core/services/setlists.service';
       opacity: 0;
       transition: color 0.15s, opacity 0.15s;
       &:hover { color: #ef4444; }
+      &:focus-visible {
+        opacity: 1;
+        color: #ef4444;
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+      }
     }
 
-    .setlist-card:hover .delete-btn { opacity: 1; }
+    .setlist-card:hover .delete-btn,
+    .setlist-card:focus-within .delete-btn { opacity: 1; }
 
     .empty {
       padding: 3rem 2rem;
@@ -236,6 +248,9 @@ import { SetlistsService } from '../../core/services/setlists.service';
         </button>
       </div>
 
+      <app-load-state [loading]="loading()" [error]="error()" loadingText="Cargando setlists..." />
+
+      @if (!loading() && !error()) {
       @if (setlists().length) {
         <div class="setlists-list" role="list" aria-label="Lista de setlists">
           @for (sl of setlists(); track sl.id) {
@@ -285,18 +300,22 @@ import { SetlistsService } from '../../core/services/setlists.service';
           </button>
         </div>
       }
+      }
     </div>
 
     <!-- Modal crear setlist -->
     @if (showModal()) {
-      <div
-        class="modal-backdrop"
-        (click)="closeModal()"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-      >
-        <div class="modal" (click)="$event.stopPropagation()">
+      <!-- Backdrop click closes the modal; keyboard users have Escape (host) and the Cancel button. -->
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+      <div class="modal-backdrop" (click)="onBackdropClick($event)">
+        <div
+          class="modal"
+          cdkTrapFocus
+          [cdkTrapFocusAutoCapture]="true"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
           <h2 class="modal-title" id="modal-title">Nueva Setlist</h2>
 
           <form [formGroup]="createForm" (ngSubmit)="createSetlist()">
@@ -348,6 +367,8 @@ export class SetlistsComponent {
   private readonly fb = inject(FormBuilder);
 
   readonly setlists = this.setlistsService.setlists;
+  readonly loading = this.setlistsService.loading;
+  readonly error = this.setlistsService.error;
   readonly showModal = signal(false);
 
   readonly createForm = this.fb.nonNullable.group({
@@ -365,6 +386,15 @@ export class SetlistsComponent {
     this.showModal.set(false);
   }
 
+  onEscape(): void {
+    if (this.showModal()) this.closeModal();
+  }
+
+  onBackdropClick(event: MouseEvent): void {
+    // Only close when the click is on the backdrop itself, not its contents.
+    if (event.target === event.currentTarget) this.closeModal();
+  }
+
   async createSetlist(): Promise<void> {
     if (this.createForm.invalid) {
       this.createForm.markAllAsTouched();
@@ -373,7 +403,8 @@ export class SetlistsComponent {
     const v = this.createForm.getRawValue();
     await this.setlistsService.create({
       name: v.name,
-      date: v.date ? new Date(v.date).toISOString() : undefined,
+      // Store the date as a plain 'YYYY-MM-DD' string to avoid UTC day shifts.
+      date: v.date || undefined,
       description: v.description || undefined,
     });
     this.closeModal();
@@ -393,7 +424,9 @@ export class SetlistsComponent {
   }
 
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('es', {
+    // Date-only strings ('YYYY-MM-DD') would parse as UTC; force local time.
+    const d = iso.includes('T') ? new Date(iso) : new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('es', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',

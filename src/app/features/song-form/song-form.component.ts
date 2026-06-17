@@ -11,11 +11,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { SongsService } from '../../core/services/songs.service';
 import { ChordSheetComponent } from '../../shared/components/chord-sheet/chord-sheet.component';
+import { MUSICAL_KEYS } from '../../shared/constants/keys';
 
-const KEYS = [
-  'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
-  'Cm', 'C#m', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bbm', 'Bm',
-];
+/** Accepts standard youtube.com/watch?v= and youtu.be/ links (with 11-char id). */
+const YOUTUBE_URL_PATTERN =
+  /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11}/;
 
 @Component({
   selector: 'app-song-form',
@@ -326,8 +326,13 @@ const KEYS = [
                 type="url"
                 formControlName="youtube"
                 placeholder="https://youtube.com/watch?v=..."
+                [class.invalid]="isInvalid('youtube')"
+                aria-describedby="youtube-hint"
               />
-              <span class="hint">Opcional — URL completa del video de referencia</span>
+              <span id="youtube-hint" class="hint">Opcional — URL completa del video de referencia</span>
+              @if (isInvalid('youtube')) {
+                <span class="error-msg" role="alert">Ingresa una URL válida de YouTube</span>
+              }
             </div>
 
             <div class="field">
@@ -400,7 +405,7 @@ export class SongFormComponent implements OnInit {
   readonly id = input<string>();
   readonly isEditing = computed(() => !!this.id());
   readonly saving = signal(false);
-  readonly keys = KEYS;
+  readonly keys = MUSICAL_KEYS;
 
   readonly form = this.fb.nonNullable.group({
     title: ['', Validators.required],
@@ -408,7 +413,7 @@ export class SongFormComponent implements OnInit {
     key: ['G', Validators.required],
     bpm: [72],
     capo: [0],
-    youtube: [''],
+    youtube: ['', Validators.pattern(YOUTUBE_URL_PATTERN)],
     tagsRaw: [''],
     content: ['', Validators.required],
   });

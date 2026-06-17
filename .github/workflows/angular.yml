@@ -1,7 +1,9 @@
-name: Deploy to GitHub Pages
+name: CI & Deploy to GitHub Pages
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -14,8 +16,14 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+env:
+  # Configure these in repo Settings → Secrets and variables → Actions.
+  # SUPABASEKEY MUST be the anon public key, never the service_role key.
+  SUPABASEURL: ${{ secrets.SUPABASEURL }}
+  SUPABASEKEY: ${{ secrets.SUPABASEKEY }}
+
 jobs:
-  build:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -24,11 +32,36 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+  build:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate environment from secrets
+        run: npm run config
 
       - name: Build for GitHub Pages
         run: npx ng build --configuration=gh-pages --base-href /musicosapp/
@@ -43,6 +76,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

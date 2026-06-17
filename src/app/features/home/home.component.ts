@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SongsService } from '../../core/services/songs.service';
 import { SetlistsService } from '../../core/services/setlists.service';
 import { SongCardComponent } from '../../shared/components/song-card/song-card.component';
+import { LoadStateComponent } from '../../shared/components/load-state/load-state.component';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, SongCardComponent],
+  imports: [RouterLink, SongCardComponent, LoadStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .home { display: flex; flex-direction: column; gap: 2.5rem; }
@@ -167,6 +168,9 @@ import { SongCardComponent } from '../../shared/components/song-card/song-card.c
         </div>
       </div>
 
+      <app-load-state [loading]="loading()" [error]="error()" />
+
+      @if (!loading() && !error()) {
       <!-- Próximas setlists -->
       <section aria-label="Próximas setlists">
         <div class="section-header">
@@ -227,6 +231,7 @@ import { SongCardComponent } from '../../shared/components/song-card/song-card.c
           </div>
         }
       </section>
+      }
     </div>
   `,
 })
@@ -237,13 +242,18 @@ export class HomeComponent {
   readonly recentSongs = this.songsService.recentSongs;
   readonly upcomingSetlists = this.setlistsService.upcomingSetlists;
 
+  readonly loading = computed(
+    () => this.songsService.loading() || this.setlistsService.loading(),
+  );
+  readonly error = computed(() => this.songsService.error() ?? this.setlistsService.error());
+
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('es', {
+    // Date-only strings ('YYYY-MM-DD') would parse as UTC; force local time.
+    const d = iso.includes('T') ? new Date(iso) : new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('es', {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   }
 }

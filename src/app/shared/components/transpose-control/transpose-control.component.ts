@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { Note, Interval } from 'tonal';
 
 @Component({
@@ -59,7 +59,7 @@ import { Note, Interval } from 'tonal';
       <button
         class="btn"
         (click)="onDown()"
-        [disabled]="semitones() <= -6"
+        [disabled]="semitones() <= -12"
         aria-label="Bajar un semitono"
       >
         −
@@ -75,7 +75,7 @@ import { Note, Interval } from 'tonal';
       <button
         class="btn"
         (click)="onUp()"
-        [disabled]="semitones() >= 6"
+        [disabled]="semitones() >= 12"
         aria-label="Subir un semitono"
       >
         +
