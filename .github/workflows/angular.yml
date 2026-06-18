@@ -47,6 +47,11 @@ jobs:
   build:
     needs: quality
     runs-on: ubuntu-latest
+    # Declares the environment so this job can read the `github-pages`
+    # environment secrets (SUPABASEURL / SUPABASEKEY) at build time. Without
+    # this, environment-scoped secrets are empty here and the bundle ships
+    # with an empty Supabase config.
+    environment: github-pages
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
