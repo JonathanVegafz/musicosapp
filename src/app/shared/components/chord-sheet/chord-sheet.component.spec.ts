@@ -37,6 +37,15 @@ describe('ChordSheetComponent', () => {
     expect(lyricText).toContain('Cristo vive');
   });
 
+  it('renders a {comment} directive as a visible section header', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.content = '{comment: Coro · //D8 - A8//}\n[D]Letra';
+    fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector('.section') as HTMLElement | null;
+    expect(section?.textContent?.trim()).toBe('Coro · //D8 - A8//');
+  });
+
   it('renders empty lines as spacer divs', () => {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.content = '[G]Primera línea\n\n[D]Segunda línea';

@@ -48,3 +48,6 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 node_modules
+
+# Local data backups (no credentials)
+.backups/

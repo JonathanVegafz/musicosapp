@@ -4,7 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { ChordLyricsPair, ChordProParser, Song } from 'chordsheetjs';
+import { ChordLyricsPair, ChordProParser, Song, Tag } from 'chordsheetjs';
 import { Chord, Interval } from 'tonal';
 import { FontSize } from '../../../types';
 
@@ -16,6 +16,8 @@ interface ChordItem {
 interface SheetLine {
   items: ChordItem[];
   isEmpty: boolean;
+  /** Section label from a ChordPro `{comment: ...}` directive, if any. */
+  comment?: string;
 }
 
 @Component({
@@ -44,6 +46,21 @@ interface SheetLine {
     .line-empty {
       height: 1em;
       margin-bottom: 0.5em;
+    }
+
+    .section {
+      color: var(--accent-chord);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.8em;
+      margin: 1em 0 0.35em;
+      padding-bottom: 0.15em;
+      border-bottom: 1px solid color-mix(in srgb, var(--accent-chord) 35%, transparent);
+    }
+
+    .section:first-child {
+      margin-top: 0;
     }
 
     .chord-item {
@@ -76,7 +93,9 @@ interface SheetLine {
       aria-label="Letra de la canción con acordes"
     >
       @for (line of lines(); track $index) {
-        @if (line.isEmpty) {
+        @if (line.comment) {
+          <div class="section">{{ line.comment }}</div>
+        } @else if (line.isEmpty) {
           <div class="line-empty" aria-hidden="true"></div>
         } @else {
           <div class="line">
@@ -110,6 +129,16 @@ export class ChordSheetComponent {
       for (const line of song.lines) {
         if (!line.items || line.items.length === 0) {
           lines.push({ items: [], isEmpty: true });
+          continue;
+        }
+
+        // A `{comment: ...}` directive marks a song section (Intro, Coro, …).
+        // Render it as a visible section header so the structure is reflected.
+        const commentTag = line.items.find(
+          (item): item is Tag => item instanceof Tag && item.name === 'comment',
+        );
+        if (commentTag) {
+          lines.push({ items: [], isEmpty: false, comment: commentTag.value ?? '' });
           continue;
         }
 
