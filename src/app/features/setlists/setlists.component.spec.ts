@@ -3,12 +3,17 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { SetlistsComponent } from './setlists.component';
 import { SetlistsService } from '../../core/services/setlists.service';
-import { mockSetlistsService, sampleSetlist } from '../../testing/mock-services';
+import { AdminAuthService } from '../../core/services/admin-auth.service';
+import { mockAdminAuthService, mockSetlistsService, sampleSetlist } from '../../testing/mock-services';
 
 function setup(stub = mockSetlistsService()) {
   TestBed.configureTestingModule({
     imports: [SetlistsComponent],
-    providers: [provideRouter([]), { provide: SetlistsService, useValue: stub }],
+    providers: [
+      provideRouter([]),
+      { provide: SetlistsService, useValue: stub },
+      { provide: AdminAuthService, useValue: mockAdminAuthService() },
+    ],
   });
   return { fixture: TestBed.createComponent(SetlistsComponent), stub };
 }

@@ -55,6 +55,18 @@ export function mockSongsService(songs: Song[] = []) {
   };
 }
 
+/** Stub of AdminAuthService, pre-unlocked so gated writes proceed; provide via useValue. */
+export function mockAdminAuthService() {
+  return {
+    unlocked: signal(true),
+    visible: signal(false),
+    errorMsg: signal<string | null>(null),
+    requestUnlock: vi.fn().mockResolvedValue(true),
+    submit: vi.fn(),
+    cancel: vi.fn(),
+  };
+}
+
 /** Stub of SetlistsService backed by signals; provide via useValue. */
 export function mockSetlistsService(setlists: Setlist[] = []) {
   const list = signal<Setlist[]>(setlists);

@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { AdminCodeModalComponent } from '../../shared/components/admin-code-modal/admin-code-modal.component';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, NavbarComponent],
+  imports: [RouterOutlet, NavbarComponent, AdminCodeModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .shell {
@@ -49,6 +50,8 @@ import { NavbarComponent } from '../navbar/navbar.component';
         </div>
       </main>
     </div>
+
+    <app-admin-code-modal />
   `,
 })
 export class AppShellComponent {}

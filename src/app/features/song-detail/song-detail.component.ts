@@ -10,6 +10,8 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { SongsService } from '../../core/services/songs.service';
+import { SetlistsService } from '../../core/services/setlists.service';
+import { AdminAuthService } from '../../core/services/admin-auth.service';
 import { ChordSheetComponent } from '../../shared/components/chord-sheet/chord-sheet.component';
 import { TransposeControlComponent } from '../../shared/components/transpose-control/transpose-control.component';
 import { FontSizeControlComponent } from '../../shared/components/font-size-control/font-size-control.component';
@@ -111,6 +113,61 @@ import { FontSize } from '../../types';
 
     .controls-spacer { flex: 1; }
 
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--surface-border);
+      background: var(--surface-overlay);
+      color: var(--text-secondary);
+      font-size: 0.825rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+      &:hover:not(:disabled) {
+        background: var(--surface-hover);
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+      }
+
+      &:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+    }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .view-btn {
+      padding: 0.4rem 0.7rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--surface-border);
+      background: var(--surface-overlay);
+      color: var(--text-secondary);
+      font-size: 0.775rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+      &:hover:not(.active) {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+
+      &.active {
+        background: rgba(167, 139, 250, 0.15);
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+      }
+    }
+
     .action-btn {
       display: inline-flex;
       align-items: center;
@@ -191,10 +248,17 @@ import { FontSize } from '../../types';
     @if (song(); as s) {
       <div class="detail">
         <!-- Back -->
-        <a class="back-btn" routerLink="/library">
-          <i class="pi pi-arrow-left" aria-hidden="true"></i>
-          Biblioteca
-        </a>
+        @if (setlistId(); as slId) {
+          <a class="back-btn" [routerLink]="['/setlists', slId]">
+            <i class="pi pi-arrow-left" aria-hidden="true"></i>
+            Volver a la setlist
+          </a>
+        } @else {
+          <a class="back-btn" routerLink="/library">
+            <i class="pi pi-arrow-left" aria-hidden="true"></i>
+            Biblioteca
+          </a>
+        }
 
         <!-- Header -->
         <div class="header">
@@ -222,6 +286,29 @@ import { FontSize } from '../../types';
 
         <!-- Controls bar -->
         <div class="controls-bar" role="toolbar" aria-label="Controles de la canción">
+          @if (setlistId()) {
+            <button
+              class="nav-btn"
+              (click)="goToSong(prevSongId())"
+              [disabled]="!prevSongId()"
+              aria-label="Canción anterior de la setlist"
+            >
+              <i class="pi pi-chevron-left" aria-hidden="true"></i>
+              Anterior
+            </button>
+            <button
+              class="nav-btn"
+              (click)="goToSong(nextSongId())"
+              [disabled]="!nextSongId()"
+              aria-label="Canción siguiente de la setlist"
+            >
+              Siguiente
+              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+            </button>
+
+            <div class="controls-divider" aria-hidden="true"></div>
+          }
+
           <app-transpose-control
             [originalKey]="s.key"
             [semitones]="semitones()"
@@ -234,6 +321,29 @@ import { FontSize } from '../../types';
             [current]="fontSize()"
             (sizeChange)="fontSize.set($event)"
           />
+
+          <div class="controls-divider" aria-hidden="true"></div>
+
+          <div class="view-toggle" role="group" aria-label="Modo de vista">
+            <button
+              class="view-btn"
+              [class.active]="!chordsOnly()"
+              (click)="chordsOnly.set(false)"
+              aria-label="Letra con acordes"
+              [attr.aria-pressed]="!chordsOnly()"
+            >
+              Letra y acordes
+            </button>
+            <button
+              class="view-btn"
+              [class.active]="chordsOnly()"
+              (click)="chordsOnly.set(true)"
+              aria-label="Solo acordes"
+              [attr.aria-pressed]="chordsOnly()"
+            >
+              Solo acordes
+            </button>
+          </div>
 
           @if (semitones() !== 0) {
             <div class="controls-divider" aria-hidden="true"></div>
@@ -287,6 +397,7 @@ import { FontSize } from '../../types';
             [content]="s.content"
             [semitones]="semitones()"
             [fontSize]="fontSize()"
+            [chordsOnly]="chordsOnly()"
           />
         </div>
       </div>
@@ -304,20 +415,51 @@ import { FontSize } from '../../types';
 })
 export class SongDetailComponent {
   private readonly songsService = inject(SongsService);
+  private readonly setlistsService = inject(SetlistsService);
+  private readonly adminAuth = inject(AdminAuthService);
   private readonly router = inject(Router);
   private readonly title = inject(Title);
 
   readonly id = input.required<string>();
+  readonly setlistId = input<string | undefined>(undefined);
 
   readonly song = computed(() => this.songsService.getById(this.id()));
   readonly semitones = signal(0);
   readonly fontSize = signal<FontSize>('normal');
+  readonly chordsOnly = signal(false);
   readonly presentationMode = signal(false);
+
+  private readonly orderedSongIds = computed(() => {
+    const sid = this.setlistId();
+    const setlist = sid ? this.setlistsService.getById(sid) : undefined;
+    return [...(setlist?.songs ?? [])].sort((a, b) => a.order - b.order).map((s) => s.songId);
+  });
+
+  private readonly currentIndex = computed(() => this.orderedSongIds().indexOf(this.id()));
+
+  readonly prevSongId = computed(() => {
+    const i = this.currentIndex();
+    return i > 0 ? this.orderedSongIds()[i - 1] : undefined;
+  });
+
+  readonly nextSongId = computed(() => {
+    const ids = this.orderedSongIds();
+    const i = this.currentIndex();
+    return i >= 0 && i < ids.length - 1 ? ids[i + 1] : undefined;
+  });
 
   constructor() {
     effect(() => {
       const s = this.song();
       this.title.setTitle(s ? `${s.title} — MúsicosApp` : 'Canción — MúsicosApp');
+    });
+
+    // El router reutiliza esta instancia al navegar entre /songs/:id, así que
+    // hay que resetear los controles locales manualmente al cambiar de canción.
+    effect(() => {
+      this.id();
+      this.semitones.set(0);
+      this.fontSize.set('normal');
     });
   }
 
@@ -325,10 +467,15 @@ export class SongDetailComponent {
     this.presentationMode.update((v) => !v);
   }
 
+  goToSong(id: string | undefined): void {
+    if (!id) return;
+    this.router.navigate(['/songs', id], { queryParams: { setlistId: this.setlistId() } });
+  }
+
   async deleteSong(id: string): Promise<void> {
-    if (confirm('¿Eliminar esta canción? Esta acción no se puede deshacer.')) {
-      await this.songsService.remove(id);
-      this.router.navigate(['/library']);
-    }
+    if (!confirm('¿Eliminar esta canción? Esta acción no se puede deshacer.')) return;
+    if (!(await this.adminAuth.requestUnlock())) return;
+    await this.songsService.remove(id);
+    this.router.navigate(['/library']);
   }
 }

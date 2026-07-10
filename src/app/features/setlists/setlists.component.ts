@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
 import { SetlistsService } from '../../core/services/setlists.service';
+import { AdminAuthService } from '../../core/services/admin-auth.service';
 import { LoadStateComponent } from '../../shared/components/load-state/load-state.component';
 
 @Component({
@@ -364,6 +365,7 @@ import { LoadStateComponent } from '../../shared/components/load-state/load-stat
 })
 export class SetlistsComponent {
   private readonly setlistsService = inject(SetlistsService);
+  private readonly adminAuth = inject(AdminAuthService);
   private readonly fb = inject(FormBuilder);
 
   readonly setlists = this.setlistsService.setlists;
@@ -400,6 +402,7 @@ export class SetlistsComponent {
       this.createForm.markAllAsTouched();
       return;
     }
+    if (!(await this.adminAuth.requestUnlock())) return;
     const v = this.createForm.getRawValue();
     await this.setlistsService.create({
       name: v.name,
@@ -413,9 +416,9 @@ export class SetlistsComponent {
   async deleteSetlist(event: Event, id: string): Promise<void> {
     event.preventDefault();
     event.stopPropagation();
-    if (confirm('¿Eliminar esta setlist?')) {
-      await this.setlistsService.remove(id);
-    }
+    if (!confirm('¿Eliminar esta setlist?')) return;
+    if (!(await this.adminAuth.requestUnlock())) return;
+    await this.setlistsService.remove(id);
   }
 
   isInvalid(field: string): boolean {

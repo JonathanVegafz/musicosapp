@@ -8,12 +8,18 @@ import { ChordSheetComponent } from './chord-sheet.component';
 @Component({
   standalone: true,
   imports: [ChordSheetComponent],
-  template: `<app-chord-sheet [content]="content" [semitones]="semitones" [fontSize]="fontSize" />`,
+  template: `<app-chord-sheet
+    [content]="content"
+    [semitones]="semitones"
+    [fontSize]="fontSize"
+    [chordsOnly]="chordsOnly"
+  />`,
 })
 class HostComponent {
   content = '';
   semitones = 0;
   fontSize: 'normal' | 'large' | 'xlarge' = 'normal';
+  chordsOnly = false;
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -85,6 +91,16 @@ describe('ChordSheetComponent', () => {
     expect(chord).toBe('F#');
   });
 
+  it('simplifies a double-sharp transposition result (C# down 6 semitones)', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.content = '[C#]Letra';
+    fixture.componentInstance.semitones = -6;
+    fixture.detectChanges();
+
+    const chord = fixture.nativeElement.querySelector('.chord')?.textContent?.trim();
+    expect(chord).toBe('G');
+  });
+
   it('falls back to plain text rendering on invalid ChordPro', () => {
     const fixture = TestBed.createComponent(HostComponent);
     // Malformed content that won't be valid ChordPro
@@ -102,6 +118,29 @@ describe('ChordSheetComponent', () => {
 
     const lines = fixture.nativeElement.querySelectorAll('.line, .line-empty');
     expect(lines.length).toBe(0);
+  });
+
+  it('hides lyrics and shows only chords when chordsOnly is true', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.content = '[G]Cristo vive [D]Cristo reina';
+    fixture.componentInstance.chordsOnly = true;
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.lyric').length).toBe(0);
+    const chords = Array.from(el.querySelectorAll('.chord')).map((n) => n.textContent?.trim());
+    expect(chords).toContain('G');
+    expect(chords).toContain('D');
+  });
+
+  it('omits lines with no chords entirely when chordsOnly is true', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.content = '[G]Con acorde\nSin acorde en esta línea';
+    fixture.componentInstance.chordsOnly = true;
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('Sin acorde en esta línea');
   });
 
   it('has aria region label for accessibility', () => {

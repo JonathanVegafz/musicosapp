@@ -19,6 +19,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import { SetlistsService } from '../../core/services/setlists.service';
 import { SongsService } from '../../core/services/songs.service';
+import { AdminAuthService } from '../../core/services/admin-auth.service';
 import { SetlistSong, Song } from '../../types';
 
 interface SetlistEntry {
@@ -554,6 +555,7 @@ interface SetlistEntry {
                     <a
                       class="open-btn"
                       [routerLink]="['/songs', entry.song.id]"
+                      [queryParams]="{ setlistId: id() }"
                       aria-label="Abrir {{ entry.song.title }}"
                     >
                       <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
@@ -635,6 +637,7 @@ interface SetlistEntry {
 export class SetlistDetailComponent {
   private readonly setlistsService = inject(SetlistsService);
   private readonly songsService = inject(SongsService);
+  private readonly adminAuth = inject(AdminAuthService);
   private readonly title = inject(Title);
 
   readonly id = input.required<string>();
@@ -677,24 +680,29 @@ export class SetlistDetailComponent {
     const name = this.memberName().trim();
     const role = this.memberRole().trim();
     if (!name || !role) return;
+    if (!(await this.adminAuth.requestUnlock())) return;
     await this.setlistsService.addMember(this.id(), name, role);
     this.memberName.set('');
     this.memberRole.set('');
   }
 
   async removeMember(memberId: string): Promise<void> {
+    if (!(await this.adminAuth.requestUnlock())) return;
     await this.setlistsService.removeMember(this.id(), memberId);
   }
 
   async addSong(songId: string): Promise<void> {
+    if (!(await this.adminAuth.requestUnlock())) return;
     await this.setlistsService.addSong(this.id(), songId);
   }
 
   async removeSong(songId: string): Promise<void> {
+    if (!(await this.adminAuth.requestUnlock())) return;
     await this.setlistsService.removeSong(this.id(), songId);
   }
 
   async onDrop(event: CdkDragDrop<SetlistEntry[]>): Promise<void> {
+    if (!(await this.adminAuth.requestUnlock())) return;
     const current = [...this.entries()];
     moveItemInArray(current, event.previousIndex, event.currentIndex);
     const reordered: SetlistSong[] = current.map((e, i) => ({

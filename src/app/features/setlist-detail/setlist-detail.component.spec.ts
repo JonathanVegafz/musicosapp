@@ -5,7 +5,9 @@ import { Title } from '@angular/platform-browser';
 import { SetlistDetailComponent } from './setlist-detail.component';
 import { SetlistsService } from '../../core/services/setlists.service';
 import { SongsService } from '../../core/services/songs.service';
+import { AdminAuthService } from '../../core/services/admin-auth.service';
 import {
+  mockAdminAuthService,
   mockSetlistsService,
   mockSongsService,
   sampleSetlist,
@@ -23,6 +25,7 @@ function setup() {
       provideRouter([]),
       { provide: SetlistsService, useValue: setlistsStub },
       { provide: SongsService, useValue: songsStub },
+      { provide: AdminAuthService, useValue: mockAdminAuthService() },
     ],
   });
   const fixture = TestBed.createComponent(SetlistDetailComponent);

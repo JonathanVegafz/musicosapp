@@ -13,6 +13,7 @@
     "pretest": "node scripts/set-env.js",
     "test": "ng test",
     "lint": "eslint src",
+    "backup:songs": "node scripts/export-songs.js",
     "serve:ssr:musicos": "node dist/musicos/server/server.mjs"
   },
   "prettier": {

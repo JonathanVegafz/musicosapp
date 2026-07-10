@@ -88,6 +88,16 @@ describe('TransposeControlComponent', () => {
     expect(display?.textContent).toContain('A');
   });
 
+  it('transposes minor keys instead of leaving them unchanged', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.key = 'Bm';
+    fixture.componentInstance.semitones = 2;
+    fixture.detectChanges();
+    const display = fixture.nativeElement.querySelector('.key-display');
+    // Bm + 2 semitones = C#m
+    expect(display?.textContent).toContain('C#m');
+  });
+
   it('shows semitone delta indicator when transposed', () => {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.semitones = 3;

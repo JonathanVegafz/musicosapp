@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { Note, Interval } from 'tonal';
+import { transposeKey } from '../../utils/chord-transpose';
 
 @Component({
   selector: 'app-transpose-control',
@@ -88,17 +88,7 @@ export class TransposeControlComponent {
   readonly semitones = input.required<number>();
   readonly transposeChange = output<number>();
 
-  readonly displayKey = computed(() => {
-    const delta = this.semitones();
-    const key = this.originalKey();
-    if (delta === 0) return key;
-    try {
-      const interval = Interval.fromSemitones(delta);
-      return Note.transpose(key, interval) || key;
-    } catch {
-      return key;
-    }
-  });
+  readonly displayKey = computed(() => transposeKey(this.originalKey(), this.semitones()));
 
   onUp(): void {
     this.transposeChange.emit(this.semitones() + 1);

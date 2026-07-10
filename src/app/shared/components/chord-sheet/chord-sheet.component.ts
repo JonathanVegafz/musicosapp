@@ -5,8 +5,8 @@ import {
   input,
 } from '@angular/core';
 import { ChordLyricsPair, ChordProParser, Song, Tag } from 'chordsheetjs';
-import { Chord, Interval } from 'tonal';
 import { FontSize } from '../../../types';
+import { transposeChord } from '../../utils/chord-transpose';
 
 interface ChordItem {
   chord: string;
@@ -18,6 +18,8 @@ interface SheetLine {
   isEmpty: boolean;
   /** Section label from a ChordPro `{comment: ...}` directive, if any. */
   comment?: string;
+  /** Whether any item on this line carries a chord (used by "chords only" mode). */
+  hasChords: boolean;
 }
 
 @Component({
@@ -97,12 +99,14 @@ interface SheetLine {
           <div class="section">{{ line.comment }}</div>
         } @else if (line.isEmpty) {
           <div class="line-empty" aria-hidden="true"></div>
-        } @else {
+        } @else if (!chordsOnly() || line.hasChords) {
           <div class="line">
             @for (item of line.items; track $index) {
               <span class="chord-item">
                 <span class="chord">{{ item.chord || '&nbsp;' }}</span>
-                <span class="lyric">{{ item.lyric || ' ' }}</span>
+                @if (!chordsOnly()) {
+                  <span class="lyric">{{ item.lyric || ' ' }}</span>
+                }
               </span>
             }
           </div>
@@ -115,6 +119,7 @@ export class ChordSheetComponent {
   readonly content = input.required<string>();
   readonly semitones = input<number>(0);
   readonly fontSize = input<FontSize>('normal');
+  readonly chordsOnly = input<boolean>(false);
 
   readonly lines = computed<SheetLine[]>(() => {
     const raw = this.content();
@@ -128,7 +133,7 @@ export class ChordSheetComponent {
 
       for (const line of song.lines) {
         if (!line.items || line.items.length === 0) {
-          lines.push({ items: [], isEmpty: true });
+          lines.push({ items: [], isEmpty: true, hasChords: false });
           continue;
         }
 
@@ -138,7 +143,12 @@ export class ChordSheetComponent {
           (item): item is Tag => item instanceof Tag && item.name === 'comment',
         );
         if (commentTag) {
-          lines.push({ items: [], isEmpty: false, comment: commentTag.value ?? '' });
+          lines.push({
+            items: [],
+            isEmpty: false,
+            hasChords: false,
+            comment: commentTag.value ?? '',
+          });
           continue;
         }
 
@@ -146,7 +156,7 @@ export class ChordSheetComponent {
           .filter((item): item is ChordLyricsPair => item instanceof ChordLyricsPair)
           .map((item) => {
             const rawChord = item.chords ?? '';
-            const transposed = delta !== 0 ? this.transposeChord(rawChord, delta) : rawChord;
+            const transposed = transposeChord(rawChord, delta);
             return {
               chord: transposed,
               lyric: item.lyrics ?? '',
@@ -154,7 +164,8 @@ export class ChordSheetComponent {
           });
 
         const isEmpty = items.length === 0 || items.every((i) => !i.chord && !i.lyric.trim());
-        lines.push({ items, isEmpty });
+        const hasChords = items.some((i) => !!i.chord);
+        lines.push({ items, isEmpty, hasChords });
       }
 
       return lines;
@@ -162,19 +173,9 @@ export class ChordSheetComponent {
       // Fallback: renderiza el texto plano si el parse falla
       return raw.split('\n').map((text) => ({
         items: [{ chord: '', lyric: text }],
+        hasChords: false,
         isEmpty: text.trim() === '',
       }));
     }
   });
-
-  private transposeChord(chord: string, semitones: number): string {
-    if (!chord) return chord;
-    try {
-      const interval = Interval.fromSemitones(semitones);
-      const result = Chord.transpose(chord, interval);
-      return result || chord;
-    } catch {
-      return chord;
-    }
-  }
 }

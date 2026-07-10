@@ -2,14 +2,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
-  OnInit,
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { SongsService } from '../../core/services/songs.service';
+import { AdminAuthService } from '../../core/services/admin-auth.service';
 import { ChordSheetComponent } from '../../shared/components/chord-sheet/chord-sheet.component';
 import { MUSICAL_KEYS } from '../../shared/constants/keys';
 
@@ -361,6 +362,13 @@ const YOUTUBE_URL_PATTERN =
               }
             </div>
 
+            @if (saveError()) {
+              <p class="error-msg" role="alert" style="padding: 0.5rem 0;">
+                <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                {{ saveError() }}
+              </p>
+            }
+
             <div class="form-actions">
               <a class="btn-outline" routerLink="/library">Cancelar</a>
               <button
@@ -397,14 +405,16 @@ const YOUTUBE_URL_PATTERN =
     </div>
   `,
 })
-export class SongFormComponent implements OnInit {
+export class SongFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly songsService = inject(SongsService);
+  private readonly adminAuth = inject(AdminAuthService);
   private readonly router = inject(Router);
 
   readonly id = input<string>();
   readonly isEditing = computed(() => !!this.id());
   readonly saving = signal(false);
+  readonly saveError = signal<string | null>(null);
   readonly keys = MUSICAL_KEYS;
 
   readonly form = this.fb.nonNullable.group({
@@ -420,7 +430,9 @@ export class SongFormComponent implements OnInit {
 
   readonly previewContent = computed(() => this.form.controls.content.value);
 
-  ngOnInit(): void {
+  // Re-runs whenever songs signal updates — handles the case where the user
+  // navigates directly to the edit URL before the async load finishes.
+  private readonly patchFormEffect = effect(() => {
     const id = this.id();
     if (!id) return;
     const song = this.songsService.getById(id);
@@ -435,7 +447,7 @@ export class SongFormComponent implements OnInit {
       tagsRaw: song.tags?.join(', ') ?? '',
       content: song.content,
     });
-  }
+  });
 
   isInvalid(field: string): boolean {
     const ctrl = this.form.get(field);
@@ -447,8 +459,10 @@ export class SongFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    if (!(await this.adminAuth.requestUnlock())) return;
 
     this.saving.set(true);
+    this.saveError.set(null);
     const v = this.form.getRawValue();
     const tags = v.tagsRaw
       ? v.tagsRaw.split(',').map((t) => t.trim()).filter(Boolean)
@@ -474,6 +488,8 @@ export class SongFormComponent implements OnInit {
         const newSong = await this.songsService.add(data);
         this.router.navigate(['/songs', newSong.id]);
       }
+    } catch (e: unknown) {
+      this.saveError.set(e instanceof Error ? e.message : 'Error al guardar. Intenta de nuevo.');
     } finally {
       this.saving.set(false);
     }
