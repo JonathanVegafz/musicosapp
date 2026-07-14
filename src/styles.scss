@@ -175,3 +175,41 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+// ─── Print (hoja de canción → "Guardar como PDF") ────────────────────────────
+@page {
+  margin: 1.5cm;
+}
+
+@media print {
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  app-navbar,
+  app-admin-code-modal {
+    display: none !important;
+  }
+
+  .shell {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .main-content {
+    overflow: visible !important;
+    height: auto !important;
+    background: #fff !important;
+  }
+
+  .page-area {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+}

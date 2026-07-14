@@ -94,7 +94,7 @@ import { MUSICAL_KEYS } from '../../shared/constants/keys';
       &::placeholder { color: var(--text-muted); }
     }
 
-    .key-select {
+    .filter-select {
       padding: 0.6rem 0.75rem;
       background: var(--surface-overlay);
       border: 1px solid var(--surface-border);
@@ -109,6 +109,40 @@ import { MUSICAL_KEYS } from '../../shared/constants/keys';
       &:focus { border-color: var(--accent-primary); }
 
       option { background: var(--surface-overlay); }
+    }
+
+    .tag-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .tag-btn {
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-overlay);
+      color: var(--text-secondary);
+      font-size: 0.775rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+      &:hover:not(.active) {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+
+      &.active {
+        background: rgba(167, 139, 250, 0.15);
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+      }
     }
 
     .results-info {
@@ -203,7 +237,7 @@ import { MUSICAL_KEYS } from '../../shared/constants/keys';
         </div>
 
         <select
-          class="key-select"
+          class="filter-select"
           [(ngModel)]="selectedKey"
           aria-label="Filtrar por tonalidad"
         >
@@ -213,7 +247,18 @@ import { MUSICAL_KEYS } from '../../shared/constants/keys';
           }
         </select>
 
-        @if (query() || selectedKey()) {
+        <select
+          class="filter-select"
+          [(ngModel)]="selectedArtist"
+          aria-label="Filtrar por cantante"
+        >
+          <option value="">Todos los cantantes</option>
+          @for (artist of artists(); track artist) {
+            <option [value]="artist">{{ artist }}</option>
+          }
+        </select>
+
+        @if (hasActiveFilters()) {
           <button class="clear-btn" (click)="clearFilters()" aria-label="Limpiar filtros">
             <i class="pi pi-times" aria-hidden="true"></i>
             Limpiar
@@ -221,14 +266,32 @@ import { MUSICAL_KEYS } from '../../shared/constants/keys';
         }
       </div>
 
+      @if (tags().length) {
+        <div class="tag-filters" role="group" aria-label="Filtrar por etiqueta">
+          @for (tag of tags(); track tag) {
+            <button
+              type="button"
+              class="tag-btn"
+              [class.active]="selectedTags().includes(tag)"
+              (click)="toggleTag(tag)"
+              [attr.aria-pressed]="selectedTags().includes(tag)"
+            >
+              {{ tag }}
+            </button>
+          }
+        </div>
+      }
+
       <app-load-state [loading]="loading()" [error]="error()" loadingText="Cargando canciones..." />
 
       @if (!loading() && !error()) {
-        @if (query() || selectedKey()) {
+        @if (hasActiveFilters()) {
           <p class="results-info">
             {{ filteredSongs().length }} resultado{{ filteredSongs().length !== 1 ? 's' : '' }}
             @if (debouncedQuery()) { para "{{ debouncedQuery() }}" }
             @if (selectedKey()) { en {{ selectedKey() }} }
+            @if (selectedArtist()) { de {{ selectedArtist() }} }
+            @if (selectedTags().length) { con {{ selectedTags().join(', ') }} }
           </p>
         }
 
@@ -264,7 +327,7 @@ import { MUSICAL_KEYS } from '../../shared/constants/keys';
           <div class="empty" role="status">
             <i class="pi pi-music" aria-hidden="true"></i>
             <p>No se encontraron canciones.</p>
-            @if (query() || selectedKey()) {
+            @if (hasActiveFilters()) {
               <button class="clear-btn" (click)="clearFilters()">Limpiar filtros</button>
             } @else {
               <a class="btn-primary" routerLink="/songs/new" style="display:inline-flex">
@@ -283,12 +346,16 @@ export class LibraryComponent {
 
   readonly query = signal('');
   readonly selectedKey = signal('');
+  readonly selectedArtist = signal('');
+  readonly selectedTags = signal<string[]>([]);
   readonly keys = MUSICAL_KEYS;
   readonly pageSize = 24;
   readonly page = signal(1);
 
   readonly loading = this.songsService.loading;
   readonly error = this.songsService.error;
+  readonly artists = this.songsService.artists;
+  readonly tags = this.songsService.tags;
 
   // Debounce the free-text query so filtering doesn't run on every keystroke.
   readonly debouncedQuery = toSignal(toObservable(this.query).pipe(debounceTime(300)), {
@@ -296,7 +363,20 @@ export class LibraryComponent {
   });
 
   readonly filteredSongs = computed(() =>
-    this.songsService.search(this.debouncedQuery(), this.selectedKey() || undefined),
+    this.songsService.search(
+      this.debouncedQuery(),
+      this.selectedKey() || undefined,
+      this.selectedArtist() || undefined,
+      this.selectedTags(),
+    ),
+  );
+
+  readonly hasActiveFilters = computed(
+    () =>
+      !!this.query() ||
+      !!this.selectedKey() ||
+      !!this.selectedArtist() ||
+      this.selectedTags().length > 0,
   );
 
   readonly totalPages = computed(() =>
@@ -313,6 +393,8 @@ export class LibraryComponent {
     effect(() => {
       this.debouncedQuery();
       this.selectedKey();
+      this.selectedArtist();
+      this.selectedTags();
       this.page.set(1);
     });
   }
@@ -325,8 +407,16 @@ export class LibraryComponent {
     this.page.update((p) => Math.min(this.totalPages(), p + 1));
   }
 
+  toggleTag(tag: string): void {
+    this.selectedTags.update((tags) =>
+      tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag],
+    );
+  }
+
   clearFilters(): void {
     this.query.set('');
     this.selectedKey.set('');
+    this.selectedArtist.set('');
+    this.selectedTags.set([]);
   }
 }

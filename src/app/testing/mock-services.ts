@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { vi } from 'vitest';
 import { Setlist, Song } from '../types';
 
@@ -40,12 +40,19 @@ export function mockSongsService(songs: Song[] = []) {
     recentSongs: signal(songs.slice(0, 5)),
     loading: signal(false),
     error: signal<string | null>(null),
-    search: vi.fn((query: string, key?: string) => {
+    artists: computed(() => [...new Set(list().map((s) => s.artist))].sort((a, b) => a.localeCompare(b))),
+    tags: computed(() =>
+      [...new Set(list().flatMap((s) => s.tags ?? []))].sort((a, b) => a.localeCompare(b)),
+    ),
+    search: vi.fn((query: string, key?: string, artist?: string, tags?: string[]) => {
       const q = query.toLowerCase().trim();
       return list().filter((s) => {
         const matchesQuery =
           !q || s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q);
-        return matchesQuery && (!key || s.key === key);
+        const matchesKey = !key || s.key === key;
+        const matchesArtist = !artist || s.artist === artist;
+        const matchesTags = !tags?.length || (s.tags ?? []).some((t) => tags.includes(t));
+        return matchesQuery && matchesKey && matchesArtist && matchesTags;
       });
     }),
     getById: vi.fn((id: string) => list().find((s) => s.id === id)),

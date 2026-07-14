@@ -1,0 +1,309 @@
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.825rem;
+  transition: color 0.15s;
+  width: fit-content;
+  &:hover { color: var(--accent-primary); }
+}
+
+.song-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.song-artist {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.song-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.meta-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--surface-hover);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.775rem;
+  color: var(--text-secondary);
+
+  i { color: var(--text-muted); font-size: 0.75rem; }
+}
+
+/* Controls bar */
+.controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 0.875rem 1.125rem;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.controls-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--surface-border);
+}
+
+.controls-spacer { flex: 1; }
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  font-size: 0.825rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.view-btn {
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  font-size: 0.775rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover:not(.active) {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  &.active {
+    background: rgba(167, 139, 250, 0.15);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: 0.825rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.action-btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--surface-border);
+  &:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+}
+
+.action-btn-danger {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  &:hover { border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+}
+
+.presentation-btn {
+  background: rgba(167, 139, 250, 0.12);
+  color: var(--accent-primary);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  &:hover { background: rgba(167, 139, 250, 0.2); }
+}
+
+/* Chord sheet panel */
+.sheet-panel {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 2rem;
+}
+
+/* Presentation mode */
+:host(.presentation-mode) .detail {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--surface-ground);
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  gap: 1rem;
+}
+
+:host(.presentation-mode) .sheet-panel {
+  border: none;
+  background: transparent;
+  padding: 0;
+  flex: 1;
+}
+
+:host(.presentation-mode) .back-btn,
+:host(.presentation-mode) .song-meta {
+  display: none;
+}
+
+/* Mobile presentation-mode: replace the full controls bar with a floating exit button */
+.presentation-exit-fab {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  :host(.presentation-mode) .controls-bar {
+    display: none;
+  }
+
+  :host(.presentation-mode) .presentation-exit-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    position: fixed;
+    right: calc(1rem + env(safe-area-inset-right, 0px));
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    z-index: 1001;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.75rem 1.1rem;
+    border-radius: 999px;
+    border: none;
+    background: var(--accent-primary);
+    color: #0f0f11;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: var(--accent-primary-hover); }
+    &:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+  }
+}
+
+/* Print-only header (logo + song info); shown only via @media print */
+.print-only { display: none; }
+
+.print-header {
+  align-items: center;
+  gap: 1rem;
+}
+
+.print-artist { color: #222; }
+.print-meta { color: #222; margin-top: 0.15rem; }
+
+@media print {
+  .print-only {
+    display: flex;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #000;
+  }
+
+  .print-logo { object-fit: contain; }
+
+  .print-title { font-size: 1.4rem; font-weight: 700; color: #000; }
+
+  /* Hide on-screen chrome that makes no sense on paper (the print-only header
+     above already shows title/artist/key/bpm, so the regular .header is redundant) */
+  .back-btn,
+  .header,
+  .controls-bar,
+  .presentation-exit-fab,
+  app-youtube-embed {
+    display: none !important;
+  }
+
+  .detail {
+    display: block;
+    gap: 0;
+    background: #fff;
+  }
+
+  /* Guard against printing while presentation mode is active: its `.detail` is
+     `position: fixed` + `overflow-y: auto`, which browsers print unreliably
+     (typically clipped to one page). Force it back to normal flow for print. */
+  :host(.presentation-mode) .detail {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    overflow: visible;
+    background: #fff;
+    padding: 0;
+  }
+
+  .sheet-panel {
+    border: none;
+    background: #fff;
+    padding: 0;
+  }
+}
+
+/* Not found */
+.not-found {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+
+  i { font-size: 3rem; display: block; margin-bottom: 1rem; }
+  h2 { font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+}

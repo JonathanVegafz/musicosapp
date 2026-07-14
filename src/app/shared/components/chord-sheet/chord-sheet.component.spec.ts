@@ -12,14 +12,14 @@ import { ChordSheetComponent } from './chord-sheet.component';
     [content]="content"
     [semitones]="semitones"
     [fontSize]="fontSize"
-    [chordsOnly]="chordsOnly"
+    [mode]="mode"
   />`,
 })
 class HostComponent {
   content = '';
   semitones = 0;
   fontSize: 'normal' | 'large' | 'xlarge' = 'normal';
-  chordsOnly = false;
+  mode: 'both' | 'chords' | 'lyrics' = 'both';
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -120,10 +120,10 @@ describe('ChordSheetComponent', () => {
     expect(lines.length).toBe(0);
   });
 
-  it('hides lyrics and shows only chords when chordsOnly is true', () => {
+  it('hides lyrics and shows only chords when mode is chords', () => {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.content = '[G]Cristo vive [D]Cristo reina';
-    fixture.componentInstance.chordsOnly = true;
+    fixture.componentInstance.mode = 'chords';
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
@@ -133,14 +133,40 @@ describe('ChordSheetComponent', () => {
     expect(chords).toContain('D');
   });
 
-  it('omits lines with no chords entirely when chordsOnly is true', () => {
+  it('omits lines with no chords entirely when mode is chords', () => {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.content = '[G]Con acorde\nSin acorde en esta línea';
-    fixture.componentInstance.chordsOnly = true;
+    fixture.componentInstance.mode = 'chords';
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).not.toContain('Sin acorde en esta línea');
+  });
+
+  it('hides chords and shows only lyrics when mode is lyrics', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.content = '[G]Cristo vive [D]Cristo reina';
+    fixture.componentInstance.mode = 'lyrics';
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.chord').length).toBe(0);
+    const lyricText = Array.from(el.querySelectorAll('.lyric'))
+      .map((n) => n.textContent)
+      .join('');
+    expect(lyricText).toContain('Cristo vive');
+    expect(lyricText).toContain('Cristo reina');
+  });
+
+  it('omits lines with no lyrics entirely when mode is lyrics', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.content = 'Con letra\n[G]';
+    fixture.componentInstance.mode = 'lyrics';
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Con letra');
+    expect(el.querySelectorAll('.chord').length).toBe(0);
   });
 
   it('has aria region label for accessibility', () => {

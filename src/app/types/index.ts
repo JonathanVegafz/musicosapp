@@ -36,3 +36,11 @@ export interface SetlistSong {
 }
 
 export type FontSize = 'normal' | 'large' | 'xlarge';
+
+/**
+ * Chord-sheet display mode:
+ * - 'both': lyrics with chords above them (default)
+ * - 'chords': chords only; lines with no chord are omitted
+ * - 'lyrics': lyrics only; lines with no lyric are omitted
+ */
+export type ChordViewMode = 'both' | 'chords' | 'lyrics';

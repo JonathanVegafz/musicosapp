@@ -30,6 +30,14 @@ export class SongsService {
   // Songs arrive ordered by created_at DESC from Supabase, so no re-sort needed.
   readonly recentSongs = computed(() => this.songs().slice(0, 5));
 
+  readonly artists = computed(() =>
+    [...new Set(this.songs().map((s) => s.artist))].sort((a, b) => a.localeCompare(b)),
+  );
+
+  readonly tags = computed(() =>
+    [...new Set(this.songs().flatMap((s) => s.tags ?? []))].sort((a, b) => a.localeCompare(b)),
+  );
+
   async init(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
     this.loading.set(true);
@@ -84,13 +92,15 @@ export class SongsService {
     this.songs.update((list) => list.filter((s) => s.id !== id));
   }
 
-  search(query: string, key?: string): Song[] {
+  search(query: string, key?: string, artist?: string, tags?: string[]): Song[] {
     const q = query.toLowerCase().trim();
     return this.songs().filter((s) => {
       const matchesQuery =
         !q || s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q);
       const matchesKey = !key || s.key === key;
-      return matchesQuery && matchesKey;
+      const matchesArtist = !artist || s.artist === artist;
+      const matchesTags = !tags?.length || (s.tags ?? []).some((t) => tags.includes(t));
+      return matchesQuery && matchesKey && matchesArtist && matchesTags;
     });
   }
 }

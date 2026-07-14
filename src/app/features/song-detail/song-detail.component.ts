@@ -3,10 +3,13 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { SongsService } from '../../core/services/songs.service';
@@ -16,237 +19,40 @@ import { ChordSheetComponent } from '../../shared/components/chord-sheet/chord-s
 import { TransposeControlComponent } from '../../shared/components/transpose-control/transpose-control.component';
 import { FontSizeControlComponent } from '../../shared/components/font-size-control/font-size-control.component';
 import { YouTubeEmbedComponent } from '../../shared/components/youtube-embed/youtube-embed.component';
-import { FontSize } from '../../types';
+import { ChordViewMode, FontSize } from '../../types';
 
 @Component({
   selector: 'app-song-detail',
   imports: [
     RouterLink,
+    NgOptimizedImage,
     ChordSheetComponent,
     TransposeControlComponent,
     FontSizeControlComponent,
     YouTubeEmbedComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `
-    .detail {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .back-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.825rem;
-      transition: color 0.15s;
-      width: fit-content;
-      &:hover { color: var(--accent-primary); }
-    }
-
-    .song-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.03em;
-      line-height: 1.2;
-    }
-
-    .song-artist {
-      font-size: 1rem;
-      color: var(--text-secondary);
-      margin-top: 0.25rem;
-    }
-
-    .song-meta {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-top: 0.25rem;
-    }
-
-    .meta-chip {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      background: var(--surface-hover);
-      border-radius: var(--radius-sm);
-      padding: 0.25rem 0.6rem;
-      font-size: 0.775rem;
-      color: var(--text-secondary);
-
-      i { color: var(--text-muted); font-size: 0.75rem; }
-    }
-
-    /* Controls bar */
-    .controls-bar {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-      flex-wrap: wrap;
-      padding: 0.875rem 1.125rem;
-      background: var(--surface-card);
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-lg);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(8px);
-    }
-
-    .controls-divider {
-      width: 1px;
-      height: 24px;
-      background: var(--surface-border);
-    }
-
-    .controls-spacer { flex: 1; }
-
-    .nav-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.5rem 0.75rem;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--surface-border);
-      background: var(--surface-overlay);
-      color: var(--text-secondary);
-      font-size: 0.825rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-
-      &:hover:not(:disabled) {
-        background: var(--surface-hover);
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-      }
-
-      &:disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-      }
-    }
-
-    .view-toggle {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .view-btn {
-      padding: 0.4rem 0.7rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--surface-border);
-      background: var(--surface-overlay);
-      color: var(--text-secondary);
-      font-size: 0.775rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-
-      &:hover:not(.active) {
-        background: var(--surface-hover);
-        color: var(--text-primary);
-      }
-
-      &.active {
-        background: rgba(167, 139, 250, 0.15);
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-      }
-    }
-
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.5rem 0.875rem;
-      border-radius: var(--radius-md);
-      font-size: 0.825rem;
-      font-weight: 500;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .action-btn-outline {
-      background: transparent;
-      color: var(--text-secondary);
-      border: 1px solid var(--surface-border);
-      &:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
-    }
-
-    .action-btn-danger {
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid transparent;
-      &:hover { border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.08); }
-    }
-
-    .presentation-btn {
-      background: rgba(167, 139, 250, 0.12);
-      color: var(--accent-primary);
-      border: 1px solid rgba(167, 139, 250, 0.25);
-      &:hover { background: rgba(167, 139, 250, 0.2); }
-    }
-
-    /* Chord sheet panel */
-    .sheet-panel {
-      background: var(--surface-card);
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-lg);
-      padding: 1.75rem 2rem;
-    }
-
-    /* Presentation mode */
-    :host(.presentation-mode) .detail {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      background: var(--surface-ground);
-      padding: 1.5rem 2rem;
-      overflow-y: auto;
-      gap: 1rem;
-    }
-
-    :host(.presentation-mode) .sheet-panel {
-      border: none;
-      background: transparent;
-      padding: 0;
-      flex: 1;
-    }
-
-    :host(.presentation-mode) .back-btn,
-    :host(.presentation-mode) .song-meta {
-      display: none;
-    }
-
-    /* Not found */
-    .not-found {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: var(--text-muted);
-
-      i { font-size: 3rem; display: block; margin-bottom: 1rem; }
-      h2 { font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
-    }
-  `,
+  styleUrl: './song-detail.component.scss',
   template: `
     @if (song(); as s) {
       <div class="detail">
+        <!-- Print-only header (logo + song info); invisible on screen, shown via @media print -->
+        <div class="print-only print-header">
+          <img ngSrc="/logo_cef.png" width="64" height="64" alt="Logo CEF" class="print-logo" />
+          <div class="print-header-text">
+            <p class="print-title">{{ s.title }}</p>
+            <p class="print-artist">{{ s.artist }}</p>
+            <p class="print-meta">
+              Tono: {{ s.key }}
+              @if (semitones() !== 0) {
+                (transportado {{ semitones() > 0 ? '+' : '' }}{{ semitones() }})
+              }
+              · {{ s.bpm }} BPM
+              @if (s.capo) { · Capo {{ s.capo }} }
+            </p>
+          </div>
+        </div>
+
         <!-- Back -->
         @if (setlistId(); as slId) {
           <a class="back-btn" [routerLink]="['/setlists', slId]">
@@ -327,21 +133,30 @@ import { FontSize } from '../../types';
           <div class="view-toggle" role="group" aria-label="Modo de vista">
             <button
               class="view-btn"
-              [class.active]="!chordsOnly()"
-              (click)="chordsOnly.set(false)"
+              [class.active]="viewMode() === 'both'"
+              (click)="viewMode.set('both')"
               aria-label="Letra con acordes"
-              [attr.aria-pressed]="!chordsOnly()"
+              [attr.aria-pressed]="viewMode() === 'both'"
             >
               Letra y acordes
             </button>
             <button
               class="view-btn"
-              [class.active]="chordsOnly()"
-              (click)="chordsOnly.set(true)"
+              [class.active]="viewMode() === 'chords'"
+              (click)="viewMode.set('chords')"
               aria-label="Solo acordes"
-              [attr.aria-pressed]="chordsOnly()"
+              [attr.aria-pressed]="viewMode() === 'chords'"
             >
               Solo acordes
+            </button>
+            <button
+              class="view-btn"
+              [class.active]="viewMode() === 'lyrics'"
+              (click)="viewMode.set('lyrics')"
+              aria-label="Solo letra"
+              [attr.aria-pressed]="viewMode() === 'lyrics'"
+            >
+              Solo letra
             </button>
           </div>
 
@@ -368,6 +183,15 @@ import { FontSize } from '../../types';
             {{ presentationMode() ? 'Salir' : 'Presentación' }}
           </button>
 
+          <button
+            class="action-btn action-btn-outline"
+            (click)="print()"
+            aria-label="Imprimir o guardar como PDF"
+          >
+            <i class="pi pi-print" aria-hidden="true"></i>
+            Imprimir / PDF
+          </button>
+
           <a
             class="action-btn action-btn-outline"
             [routerLink]="['/songs', s.id, 'edit']"
@@ -386,6 +210,20 @@ import { FontSize } from '../../types';
           </button>
         </div>
 
+        <!-- Mobile presentation-mode exit FAB (hidden on desktop; controls-bar stays there) -->
+        @if (presentationMode()) {
+          <button
+            #exitFab
+            class="presentation-exit-fab"
+            type="button"
+            (click)="togglePresentation()"
+            aria-label="Salir del modo presentación"
+          >
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Salir
+          </button>
+        }
+
         <!-- YouTube -->
         @if (s.youtube) {
           <app-youtube-embed [url]="s.youtube" />
@@ -397,7 +235,7 @@ import { FontSize } from '../../types';
             [content]="s.content"
             [semitones]="semitones()"
             [fontSize]="fontSize()"
-            [chordsOnly]="chordsOnly()"
+            [mode]="viewMode()"
           />
         </div>
       </div>
@@ -426,8 +264,10 @@ export class SongDetailComponent {
   readonly song = computed(() => this.songsService.getById(this.id()));
   readonly semitones = signal(0);
   readonly fontSize = signal<FontSize>('normal');
-  readonly chordsOnly = signal(false);
+  readonly viewMode = signal<ChordViewMode>('both');
   readonly presentationMode = signal(false);
+
+  private readonly exitFab = viewChild<ElementRef<HTMLButtonElement>>('exitFab');
 
   private readonly orderedSongIds = computed(() => {
     const sid = this.setlistId();
@@ -461,10 +301,22 @@ export class SongDetailComponent {
       this.semitones.set(0);
       this.fontSize.set('normal');
     });
+
+    // Mueve el foco al botón flotante de salida al entrar en modo presentación,
+    // ya que en móvil el resto de la barra de controles se oculta con display:none.
+    effect(() => {
+      if (this.presentationMode()) {
+        this.exitFab()?.nativeElement.focus();
+      }
+    });
   }
 
   togglePresentation(): void {
     this.presentationMode.update((v) => !v);
+  }
+
+  print(): void {
+    window.print();
   }
 
   goToSong(id: string | undefined): void {

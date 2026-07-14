@@ -101,9 +101,9 @@ describe('SongsService', () => {
 
     beforeEach(async () => {
       mockSb = buildMockSupabase([
-        mockSongRow({ id: '1', title: 'Cristo Vive', artist: 'Hillsong', key: 'G' }),
-        mockSongRow({ id: '2', title: 'Waymaker', artist: 'Sinach', key: 'A' }),
-        mockSongRow({ id: '3', title: 'Goodness of God', artist: 'Bethel', key: 'G' }),
+        mockSongRow({ id: '1', title: 'Cristo Vive', artist: 'Hillsong', key: 'G', tags: ['adoración'] }),
+        mockSongRow({ id: '2', title: 'Waymaker', artist: 'Sinach', key: 'A', tags: ['fe'] }),
+        mockSongRow({ id: '3', title: 'Goodness of God', artist: 'Bethel', key: 'G', tags: ['adoración', 'fe'] }),
       ]);
       service = setup();
       await service.init();
@@ -137,6 +137,40 @@ describe('SongsService', () => {
 
     it('returns empty array when no match', () => {
       expect(service.search('zzz', undefined)).toHaveLength(0);
+    });
+
+    it('filters by exact artist', () => {
+      const results = service.search('', undefined, 'Bethel');
+      expect(results).toHaveLength(1);
+      expect(results[0].title).toBe('Goodness of God');
+    });
+
+    it('filters by any matching tag', () => {
+      const results = service.search('', undefined, undefined, ['fe']);
+      expect(results.map((s) => s.title).sort()).toEqual(['Goodness of God', 'Waymaker']);
+    });
+
+    it('combines artist and tag filters', () => {
+      const results = service.search('', undefined, 'Bethel', ['fe']);
+      expect(results).toHaveLength(1);
+      expect(results[0].title).toBe('Goodness of God');
+    });
+  });
+
+  // ── artists / tags ───────────────────────────────────────────────────────────
+
+  describe('artists and tags', () => {
+    it('returns distinct, sorted artists and tags', async () => {
+      mockSb = buildMockSupabase([
+        mockSongRow({ id: '1', artist: 'Sinach', tags: ['fe'] }),
+        mockSongRow({ id: '2', artist: 'Bethel', tags: ['adoración', 'fe'] }),
+        mockSongRow({ id: '3', artist: 'Bethel', tags: undefined }),
+      ]);
+      const service = setup();
+      await service.init();
+
+      expect(service.artists()).toEqual(['Bethel', 'Sinach']);
+      expect(service.tags()).toEqual(['adoración', 'fe']);
     });
   });
 

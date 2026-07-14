@@ -5,7 +5,7 @@ import {
   input,
 } from '@angular/core';
 import { ChordLyricsPair, ChordProParser, Song, Tag } from 'chordsheetjs';
-import { FontSize } from '../../../types';
+import { ChordViewMode, FontSize } from '../../../types';
 import { transposeChord } from '../../utils/chord-transpose';
 
 interface ChordItem {
@@ -20,6 +20,8 @@ interface SheetLine {
   comment?: string;
   /** Whether any item on this line carries a chord (used by "chords only" mode). */
   hasChords: boolean;
+  /** Whether any item on this line carries non-empty lyric text (used by "lyrics only" mode). */
+  hasLyrics: boolean;
 }
 
 @Component({
@@ -86,25 +88,58 @@ interface SheetLine {
       line-height: 1.5;
       white-space: pre;
     }
+
+    /* Print (invoked via song-detail's "Imprimir / PDF" button + window.print()) */
+    @media print {
+      .sheet {
+        color: #000;
+      }
+
+      .section {
+        color: #000;
+        border-bottom-color: #000;
+      }
+
+      .chord {
+        color: #000;
+      }
+
+      .lyric {
+        color: #000;
+      }
+
+      .line,
+      .section {
+        break-inside: avoid;
+      }
+
+      .section {
+        break-after: avoid-page;
+      }
+    }
   `,
   template: `
     <div
       class="sheet"
       [class]="'sheet size-' + fontSize()"
       role="region"
-      aria-label="Letra de la canción con acordes"
+      [attr.aria-label]="
+        mode() === 'chords' ? 'Solo acordes' : mode() === 'lyrics' ? 'Solo letra' : 'Letra de la canción con acordes'
+      "
     >
       @for (line of lines(); track $index) {
         @if (line.comment) {
           <div class="section">{{ line.comment }}</div>
         } @else if (line.isEmpty) {
           <div class="line-empty" aria-hidden="true"></div>
-        } @else if (!chordsOnly() || line.hasChords) {
+        } @else if (mode() === 'both' || (mode() === 'chords' && line.hasChords) || (mode() === 'lyrics' && line.hasLyrics)) {
           <div class="line">
             @for (item of line.items; track $index) {
               <span class="chord-item">
-                <span class="chord">{{ item.chord || '&nbsp;' }}</span>
-                @if (!chordsOnly()) {
+                @if (mode() !== 'lyrics') {
+                  <span class="chord">{{ item.chord || '&nbsp;' }}</span>
+                }
+                @if (mode() !== 'chords') {
                   <span class="lyric">{{ item.lyric || ' ' }}</span>
                 }
               </span>
@@ -119,7 +154,7 @@ export class ChordSheetComponent {
   readonly content = input.required<string>();
   readonly semitones = input<number>(0);
   readonly fontSize = input<FontSize>('normal');
-  readonly chordsOnly = input<boolean>(false);
+  readonly mode = input<ChordViewMode>('both');
 
   readonly lines = computed<SheetLine[]>(() => {
     const raw = this.content();
@@ -133,7 +168,7 @@ export class ChordSheetComponent {
 
       for (const line of song.lines) {
         if (!line.items || line.items.length === 0) {
-          lines.push({ items: [], isEmpty: true, hasChords: false });
+          lines.push({ items: [], isEmpty: true, hasChords: false, hasLyrics: false });
           continue;
         }
 
@@ -147,6 +182,7 @@ export class ChordSheetComponent {
             items: [],
             isEmpty: false,
             hasChords: false,
+            hasLyrics: false,
             comment: commentTag.value ?? '',
           });
           continue;
@@ -165,7 +201,8 @@ export class ChordSheetComponent {
 
         const isEmpty = items.length === 0 || items.every((i) => !i.chord && !i.lyric.trim());
         const hasChords = items.some((i) => !!i.chord);
-        lines.push({ items, isEmpty, hasChords });
+        const hasLyrics = items.some((i) => !!i.lyric.trim());
+        lines.push({ items, isEmpty, hasChords, hasLyrics });
       }
 
       return lines;
@@ -174,6 +211,7 @@ export class ChordSheetComponent {
       return raw.split('\n').map((text) => ({
         items: [{ chord: '', lyric: text }],
         hasChords: false,
+        hasLyrics: text.trim() !== '',
         isEmpty: text.trim() === '',
       }));
     }
